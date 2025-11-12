@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:safe_map_application/screens/Home/widgets/logo_widget.dart';
-import 'package:safe_map_application/screens/Home/widgets/primary_button.dart';
-import 'package:safe_map_application/screens/Home/widgets/secondary_button.dart';
+import 'package:safe_map_application/screens/Welcome/widgets/logo_widget.dart';
+import 'package:safe_map_application/screens/Welcome/widgets/primary_button.dart';
+import 'package:safe_map_application/screens/Welcome/widgets/secondary_button.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, this.logoImage});
+class WelcomeScreen extends StatefulWidget {
+  const WelcomeScreen({super.key, this.logoImage});
 
   final ImageProvider? logoImage;
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _WelcomeScreenState extends State<WelcomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(

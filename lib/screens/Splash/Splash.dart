@@ -12,13 +12,13 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _navigateToHome();
+    _navigateToWelcome();
   }
 
-  Future<void> _navigateToHome() async {
+  Future<void> _navigateToWelcome() async {
     await Future.delayed(const Duration(seconds: 2));
     if (mounted) {
-      Navigator.of(context).pushReplacementNamed('/home');
+      Navigator.of(context).pushReplacementNamed('/welcome');
     }
   }
 

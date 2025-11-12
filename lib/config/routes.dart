@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:safe_map_application/screens/Home/Home.dart';
+import 'package:safe_map_application/screens/Welcome/Welcome.dart';
 
 class AppRoutes {
-  static const home = '/home';
+  static const welcome = '/welcome';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
-      case home:
+      case welcome:
         return MaterialPageRoute(
-          builder: (_) => const HomeScreen(),
+          builder: (_) => const WelcomeScreen(),
         );
       default:
         return MaterialPageRoute(
