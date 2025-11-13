@@ -27,7 +27,7 @@ class _SecondaryButtonState extends State<SecondaryButton> {
         ),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFFDFFBF5), Color(0xFFBFF7E8)],
+            colors: [Color(0xFFDFF7E2), Color(0xFFDFF7E2)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
