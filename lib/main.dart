@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:safe_map_application/screens/Splash/Splash.dart';
 import 'package:safe_map_application/config/routes.dart';
 
@@ -16,7 +17,7 @@ class MainApp extends StatelessWidget {
       title: 'SafeMap',
       theme: ThemeData(
         useMaterial3: true,
-        fontFamily: 'Poppins',
+        textTheme: GoogleFonts.poppinsTextTheme(),
       ),
       home: const SplashScreen(),
       onGenerateRoute: AppRoutes.generateRoute,
