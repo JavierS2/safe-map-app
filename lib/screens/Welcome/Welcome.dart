@@ -32,8 +32,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                LogoWidget(logoImage: widget.logoImage ?? const AssetImage('assets/images/logo.png')),
+                LogoWidget(
+                  logoImage: widget.logoImage ??
+                      const AssetImage('assets/images/logo.png'),
+                ),
+
                 const SizedBox(height: 16),
+
                 const Text(
                   'SafeMap',
                   style: TextStyle(
@@ -43,28 +48,34 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     letterSpacing: 1.2,
                   ),
                 ),
+
                 const SizedBox(height: 14),
+
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 48),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      // Botón Iniciar Sesión → /login
                       SizedBox(
                         width: double.infinity,
                         child: PrimaryButton(
                           label: 'Iniciar Sesión',
                           onPressed: () {
-                            _showMessage('Iniciar Sesión');
+                            Navigator.pushNamed(context, '/login');
                           },
                         ),
                       ),
+
                       const SizedBox(height: 12),
+
+                      // Botón Registrarse → /register
                       SizedBox(
                         width: double.infinity,
                         child: SecondaryButton(
                           label: 'Registrarse',
                           onPressed: () {
-                            _showMessage('Registrarse');
+                            Navigator.pushNamed(context, '/register');
                           },
                         ),
                       ),
@@ -78,12 +89,4 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       ),
     );
   }
-
-  void _showMessage(String action) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$action - Próximamente')),
-    );
-  }
 }
-
-
