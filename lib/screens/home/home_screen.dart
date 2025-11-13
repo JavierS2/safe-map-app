@@ -43,15 +43,19 @@ class HomeScreen extends StatelessWidget {
                 greeting: 'Buenos días',
               ),
               const SizedBox(height: 16),
+              
+              // ----------- CAMBIO AQUÍ -----------
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: IncidentSummaryCard(
                   totalToday: 53,
                   onReportNow: () {
-                    // TODO: navegar a pantalla de reporte
+                    Navigator.pushNamed(context, '/create-report');
                   },
                 ),
               ),
+              // -----------------------------------
+
               const SizedBox(height: 24),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16),
@@ -68,7 +72,6 @@ class HomeScreen extends StatelessWidget {
                           child: ReportItemCard(
                             data: r,
                             onDetailsPressed: () {
-                              // TODO: navegar al detalle del reporte
                             },
                           ),
                         ),
