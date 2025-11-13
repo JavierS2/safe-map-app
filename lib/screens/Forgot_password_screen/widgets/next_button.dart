@@ -8,7 +8,9 @@ class NextButton extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: () {
+          Navigator.pushNamed(context, '/new-password');
+        },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF00CCFF),
           padding: const EdgeInsets.symmetric(vertical: 15),
