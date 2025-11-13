@@ -16,7 +16,7 @@ class MainApp extends StatelessWidget {
       title: 'SafeMap',
       theme: ThemeData(
         useMaterial3: true,
-        fontFamily: 'Roboto',
+        fontFamily: 'Poppins',
       ),
       home: const SplashScreen(),
       onGenerateRoute: AppRoutes.generateRoute,
