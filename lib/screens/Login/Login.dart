@@ -3,6 +3,7 @@ import 'widgets/EmailInput.dart';
 import 'widgets/password_field.dart';
 import 'widgets/forgot_password_link.dart';
 import 'widgets/register_button.dart';
+import 'package:safe_map_application/screens/home/home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -89,7 +90,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton(
-                                onPressed: () {},
+                                onPressed: () {
+                                   Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const HomeScreen()),
+                                  );
+                                },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF00CCFF),
                                   padding: const EdgeInsets.symmetric(

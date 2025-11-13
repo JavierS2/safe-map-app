@@ -6,6 +6,7 @@ import 'package:safe_map_application/screens/Register/Register.dart';
 // Screens
 import 'package:safe_map_application/screens/Splash/Splash.dart';
 import 'package:safe_map_application/screens/Welcome/Welcome.dart';
+import 'package:safe_map_application/screens/home/home_screen.dart';
 
 class AppRoutes {
   // Rutas nombradas
@@ -15,6 +16,7 @@ class AppRoutes {
   static const register = '/register';
   static const forgotPassword = '/forgot-password';
   static const newPassword = '/new-password';
+  static const home = '/home';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -47,6 +49,11 @@ class AppRoutes {
       case newPassword:
         return MaterialPageRoute(
           builder: (_) => const NewPasswordScreen(),
+        );
+
+      case home:
+        return MaterialPageRoute(
+          builder: (_) => const HomeScreen(),
         );
 
       default:
