@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:safe_map_application/screens/Splash/Splash.dart';
+import 'package:safe_map_application/screens/splash/splash.dart';
 import 'package:safe_map_application/config/routes.dart';
 
 void main() {
