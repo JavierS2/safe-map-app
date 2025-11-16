@@ -17,7 +17,7 @@ class Register extends StatefulWidget {
 class _RegisterScreenState extends State<Register> {
   final nameCtrl = TextEditingController();
   final emailCtrl = TextEditingController();
-  final phoneCtrl = TextEditingController(text: "+57");
+  final phoneCtrl = TextEditingController();
   final birthCtrl = TextEditingController();
   final barrioCtrl = TextEditingController();
   final idCtrl = TextEditingController();
@@ -25,6 +25,7 @@ class _RegisterScreenState extends State<Register> {
   final confirmCtrl = TextEditingController();
 
   final _formKey = GlobalKey<FormState>();
+  bool _showErrors = false;
 
   @override
   Widget build(BuildContext context) {
@@ -67,6 +68,9 @@ class _RegisterScreenState extends State<Register> {
 
                               LabeledField(
                                 label: "Nombre Completo",
+                                errorText: _showErrors
+                                    ? Validators.validateName(nameCtrl.text)
+                                    : null,
                                 child: TextInput(
                                   hint: "John Doe",
                                   controller: nameCtrl,
@@ -76,6 +80,9 @@ class _RegisterScreenState extends State<Register> {
 
                               LabeledField(
                                 label: "Email",
+                                errorText: _showErrors
+                                    ? Validators.validateEmail(emailCtrl.text)
+                                    : null,
                                 child: TextInput(
                                   hint: "example@example.com",
                                   controller: emailCtrl,
@@ -88,6 +95,10 @@ class _RegisterScreenState extends State<Register> {
                                   Expanded(
                                     child: LabeledField(
                                       label: "Teléfono",
+                                      errorText: _showErrors
+                                          ? Validators.validatePhone(
+                                              phoneCtrl.text)
+                                          : null,
                                       child: PhoneInput(
                                         controller: phoneCtrl,
                                         validator: Validators.validatePhone,
@@ -98,7 +109,14 @@ class _RegisterScreenState extends State<Register> {
                                   Expanded(
                                     child: LabeledField(
                                       label: "Fecha de Nacimiento",
-                                      child: DateInput(controller: birthCtrl),
+                                      errorText: _showErrors
+                                          ? Validators.validateDate(
+                                              birthCtrl.text)
+                                          : null,
+                                      child: DateInput(
+                                        controller: birthCtrl,
+                                        validator: Validators.validateDate,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -109,6 +127,7 @@ class _RegisterScreenState extends State<Register> {
                                   Expanded(
                                     child: LabeledField(
                                       label: "Barrio De Residencia",
+                                      // no validator provided; leave errorText null
                                       child: TextInput(
                                         hint: "Bonda",
                                         controller: barrioCtrl,
@@ -119,6 +138,7 @@ class _RegisterScreenState extends State<Register> {
                                   Expanded(
                                     child: LabeledField(
                                       label: "Cédula De Ciudadanía",
+                                      // no id validator provided
                                       child: TextInput(
                                         hint: "1234567890",
                                         controller: idCtrl,
@@ -130,6 +150,9 @@ class _RegisterScreenState extends State<Register> {
 
                               LabeledField(
                                 label: "Contraseña",
+                                errorText: _showErrors
+                                    ? Validators.validatePassword(passCtrl.text)
+                                    : null,
                                 child: PasswordInput(
                                   controller: passCtrl,
                                   validator: Validators.validatePassword,
@@ -138,6 +161,10 @@ class _RegisterScreenState extends State<Register> {
 
                               LabeledField(
                                 label: "Confirmar Contraseña",
+                                errorText: _showErrors
+                                    ? Validators.confirmPassword(
+                                        passCtrl.text, confirmCtrl.text)
+                                    : null,
                                 child: PasswordInput(
                                   controller: confirmCtrl,
                                   validator: (v) =>
@@ -152,8 +179,11 @@ class _RegisterScreenState extends State<Register> {
                                   width: double.infinity,
                                   child: ElevatedButton(
                                     onPressed: () {
+                                      setState(() {
+                                        _showErrors = true;
+                                      });
                                       if (_formKey.currentState!.validate()) {
-                                        debugPrint("Formulario válido 🎉");
+                                        debugPrint("Formulario válido");
                                       }
                                     },
                                     style: ElevatedButton.styleFrom(
