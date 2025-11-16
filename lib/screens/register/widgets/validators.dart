@@ -19,8 +19,9 @@ class Validators {
 
   static String? validatePhone(String? value) {
     if (value == null || value.isEmpty) return "Ingresa un número";
-    if (!RegExp(r'^\+57[0-9]{10}$').hasMatch(value)) {
-      return "Formato inválido (Ej: +573001234567)";
+    // expect exactly 10 digits (without the +57 prefix)
+    if (!RegExp(r'^[0-9]{10}$').hasMatch(value)) {
+      return "Formato inválido (Ej: 3001234567)";
     }
     return null;
   }
@@ -40,6 +41,14 @@ class Validators {
     if (!hasSpecial) return "Debe incluir caracteres especiales";
     if (!validLength) return "Debe tener al menos 8 caracteres";
 
+    return null;
+  }
+
+  static String? validateDate(String? value) {
+    if (value == null || value.isEmpty) return "Ingresa fecha de nacimiento";
+    if (!RegExp(r'^\d{1,2}/\d{1,2}/\d{4}$').hasMatch(value)) {
+      return "Formato inválido";
+    }
     return null;
   }
 

@@ -27,6 +27,11 @@ class TextInput extends StatelessWidget {
           border: InputBorder.none,
           hintText: hint,
           hintStyle: const TextStyle(fontFamily: 'Poppins'),
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(vertical: 14),
+          // suppress default error text so we render errors above the field
+          errorStyle: const TextStyle(height: 0, fontSize: 0),
+          errorMaxLines: 1,
         ),
       ),
     );
