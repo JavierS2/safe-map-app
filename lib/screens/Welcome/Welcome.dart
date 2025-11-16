@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:safe_map_application/screens/Welcome/widgets/logo_widget.dart';
-import 'package:safe_map_application/screens/Welcome/widgets/primary_button.dart';
-import 'package:safe_map_application/screens/Welcome/widgets/secondary_button.dart';
+import 'package:safe_map_application/screens/welcome/widgets/logo_widget.dart';
+import 'package:safe_map_application/screens/welcome/widgets/primary_button.dart';
+import 'package:safe_map_application/screens/welcome/widgets/secondary_button.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key, this.logoImage});

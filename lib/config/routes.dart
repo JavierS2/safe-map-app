@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:safe_map_application/screens/Forgot_password_screen/Forgot_password_screen.dart';
-import 'package:safe_map_application/screens/Login/Login.dart';
-import 'package:safe_map_application/screens/NewPassword/New_password_screen.dart';
-import 'package:safe_map_application/screens/Register/Register.dart';
+import 'package:safe_map_application/screens/forgot_password_screen/forgot_password_screen.dart';
+import 'package:safe_map_application/screens/login/login.dart';
+import 'package:safe_map_application/screens/new_password/new_password_screen.dart';
+import 'package:safe_map_application/screens/register/register.dart';
 // Screens
-import 'package:safe_map_application/screens/Splash/Splash.dart';
-import 'package:safe_map_application/screens/Welcome/Welcome.dart';
+import 'package:safe_map_application/screens/splash/splash.dart';
+import 'package:safe_map_application/screens/welcome/welcome.dart';
 import 'package:safe_map_application/screens/home/home_screen.dart';
 import 'package:safe_map_application/screens/report/create_report_screen.dart';
 
