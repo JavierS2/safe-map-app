@@ -33,54 +33,90 @@ class HomeScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       bottomNavigationBar: const SafeBottomNavBar(),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const HomeHeader(
-                userName: 'Eduardo',
-                greeting: 'Buenos días',
-              ),
-              const SizedBox(height: 16),
-              
-              // ----------- CAMBIO AQUÍ -----------
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: IncidentSummaryCard(
-                  totalToday: 53,
-                  onReportNow: () {
-                    Navigator.pushNamed(context, '/create-report');
-                  },
-                ),
-              ),
-              // -----------------------------------
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 24),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const HomeHeader(
+                        userName: 'Eduardo',
+                        greeting: 'Buenos días',
+                      ),
 
-              const SizedBox(height: 24),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
-                child: LatestReportsTitle(),
-              ),
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  children: reports
-                      .map(
-                        (r) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: ReportItemCard(
-                            data: r,
-                            onDetailsPressed: () {
-                            },
+                      // Extend the blue background a bit lower so the
+                      // rounded white panel overlays blue instead of the
+                      // light app background (prevents a straight white
+                      // rectangle showing through the curves).
+                      Container(
+                        height: 48,
+                        color: AppColors.primary,
+                      ),
+
+                      // White panel under header with rounded top corners
+                      Expanded(
+                        child: Transform.translate(
+                          offset: const Offset(0, -32),
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFFAFFFD),
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(40),
+                                topRight: Radius.circular(40),
+                              ),
+                            ),
+                            padding: const EdgeInsets.all(30),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  child: IncidentSummaryCard(
+                                    totalToday: 53,
+                                    onReportNow: () {
+                                      Navigator.pushNamed(context, '/create-report');
+                                    },
+                                    backgroundColor: AppColors.primary,
+                                  ),
+                                ),
+
+                                const SizedBox(height: 24),
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 16),
+                                  child: LatestReportsTitle(),
+                                ),
+                                const SizedBox(height: 12),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  child: Column(
+                                    children: reports
+                                        .map(
+                                          (r) => Padding(
+                                            padding: const EdgeInsets.only(bottom: 12),
+                                            child: ReportItemCard(
+                                              data: r,
+                                              onDetailsPressed: () {},
+                                            ),
+                                          ),
+                                        )
+                                        .toList(),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      )
-                      .toList(),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
