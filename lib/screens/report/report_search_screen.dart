@@ -17,6 +17,11 @@ class ReportSearchScreen extends StatefulWidget {
 
 class _ReportSearchScreenState extends State<ReportSearchScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _innerScrollController = ScrollController();
+  bool _reserveBottomPadding = false;
+  final GlobalKey _contentKey = GlobalKey();
+  double? _lastConstraintsMaxHeight;
+  bool _useOuterPadding = false;
 
   final List<Map<String, String>> _allReports = [
     {
@@ -77,6 +82,7 @@ class _ReportSearchScreenState extends State<ReportSearchScreen> {
   void initState() {
     super.initState();
     _filtered = List.from(_allReports);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _updateReservePadding());
   }
 
   void _onSearchChanged(String q) {
@@ -133,6 +139,41 @@ class _ReportSearchScreenState extends State<ReportSearchScreen> {
         return true;
       }).toList();
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _updateReservePadding());
+  }
+
+  void _updateReservePadding() {
+    if (!mounted) return;
+    if (!_innerScrollController.hasClients) {
+      setState(() {
+        _reserveBottomPadding = false;
+      });
+      return;
+    }
+
+    final needs = _innerScrollController.position.maxScrollExtent > 0;
+    if (needs != _reserveBottomPadding) {
+      setState(() {
+        _reserveBottomPadding = needs;
+      });
+    }
+    // also trigger content measurement to decide outer padding
+    WidgetsBinding.instance.addPostFrameCallback((_) => _measureContent());
+  }
+
+  void _measureContent() {
+    if (!mounted) return;
+    final ctx = _contentKey.currentContext;
+    if (ctx == null || _lastConstraintsMaxHeight == null) return;
+    final box = ctx.findRenderObject() as RenderBox?;
+    if (box == null) return;
+    final contentHeight = box.size.height;
+    final needsOuter = contentHeight > _lastConstraintsMaxHeight!;
+    if (needsOuter != _useOuterPadding) {
+      setState(() {
+        _useOuterPadding = needsOuter;
+      });
+    }
   }
 
   Future<void> _showCategoryPicker() async {
@@ -221,6 +262,7 @@ class _ReportSearchScreenState extends State<ReportSearchScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _innerScrollController.dispose();
     super.dispose();
   }
 
@@ -230,78 +272,92 @@ class _ReportSearchScreenState extends State<ReportSearchScreen> {
       backgroundColor: AppColors.background,
       bottomNavigationBar: const SafeBottomNavBar(selectedRoute: AppRoutes.reportSearch),
       body: SafeArea(
-        child: Column(
-          children: [
-            const ReportHeader(title: 'Buscar reportes'),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 104),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const ReportHeader(title: 'Buscar reportes'),
 
-            // extender azul como en otras pantallas
-            Container(height: 48, color: AppColors.primary),
+                      // extender azul como en otras pantallas
+                      Container(height: 48, color: AppColors.primary),
 
-            Expanded(
-              child: Transform.translate(
-                offset: const Offset(0, -32),
-                child: Container(
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFFAFFFD),
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(40),
-                      topRight: Radius.circular(40),
-                    ),
-                  ),
-                  padding: const EdgeInsets.all(20),
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        ReportSearchBar(
-                          controller: _searchController,
-                          onChanged: _onSearchChanged,
-                        ),
-
-                        const SizedBox(height: 12),
-
-                        // Filter chips / buttons (centered and responsive)
-                        ReportFilters(
-                          categoryLabel: _selectedCategory ?? 'Categoría',
-                          neighborhoodLabel: _selectedNeighborhood ?? 'Barrio',
-                          dateLabel: _selectedDate != null
-                              ? '${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}'
-                              : 'Fecha',
-                          timeLabel: _selectedTime != null
-                              ? '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}'
-                              : 'Hora',
-                          onCategoryTap: _showCategoryPicker,
-                          onNeighborhoodTap: _showNeighborhoodDialog,
-                          onDateTap: _pickDate,
-                          onTimeTap: _pickTime,
-                        ),
-
-                        const SizedBox(height: 12),
-
-                        if (_filtered.isEmpty)
-                          Center(
-                            child: Text(
-                              'No reports found',
-                              style: Theme.of(context).textTheme.bodyMedium,
+                      Expanded(
+                        child: Transform.translate(
+                          offset: const Offset(0, -32),
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFFAFFFD),
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(40),
+                                topRight: Radius.circular(40),
+                              ),
                             ),
-                          )
-                        else
-                          ReportList(
-                            reports: _filtered,
-                            onTap: (r) {
-                              // place for navigation to detail or further action
-                            },
-                          ),
+                            padding: const EdgeInsets.all(20),
+                            child: SingleChildScrollView(
+                              controller: _innerScrollController,
+                              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  ReportSearchBar(
+                                    controller: _searchController,
+                                    onChanged: _onSearchChanged,
+                                  ),
 
-                        const SizedBox(height: 8),
-                      ],
-                    ),
+                                  const SizedBox(height: 12),
+
+                                  // Filter chips / buttons (centered and responsive)
+                                  ReportFilters(
+                                    categoryLabel: _selectedCategory ?? 'Categoría',
+                                    neighborhoodLabel: _selectedNeighborhood ?? 'Barrio',
+                                    dateLabel: _selectedDate != null
+                                        ? '${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}'
+                                        : 'Fecha',
+                                    timeLabel: _selectedTime != null
+                                        ? '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}'
+                                        : 'Hora',
+                                    onCategoryTap: _showCategoryPicker,
+                                    onNeighborhoodTap: _showNeighborhoodDialog,
+                                    onDateTap: _pickDate,
+                                    onTimeTap: _pickTime,
+                                  ),
+
+                                  const SizedBox(height: 12),
+
+                                  if (_filtered.isEmpty)
+                                    Center(
+                                      child: Text(
+                                        'No reports found',
+                                        style: Theme.of(context).textTheme.bodyMedium,
+                                      ),
+                                    )
+                                  else
+                                    ReportList(
+                                      reports: _filtered,
+                                      onTap: (r) {
+                                        // place for navigation to detail or further action
+                                      },
+                                    ),
+
+                                  const SizedBox(height: 8),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
