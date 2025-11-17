@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
-import '../home/widgets/safe_bottom_nav_bar.dart';
+import '../../widgets/safe_bottom_nav_bar.dart';
 import 'widgets/report_header.dart';
 import 'widgets/report_text_field.dart';
 import 'widgets/report_dropdown_field.dart';
