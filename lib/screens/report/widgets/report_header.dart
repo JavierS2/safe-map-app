@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../../../theme/app_colors.dart';
 
 class ReportHeader extends StatelessWidget {
-  const ReportHeader({super.key});
+  final String title;
+
+  const ReportHeader({super.key, this.title = 'Crea Tu Reporte'});
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +26,7 @@ class ReportHeader extends StatelessWidget {
           ),
           const Spacer(),
           Text(
-            'Crea Tu Reporte',
+            title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
