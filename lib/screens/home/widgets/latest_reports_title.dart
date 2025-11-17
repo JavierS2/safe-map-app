@@ -7,17 +7,19 @@ class LatestReportsTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding:
-          const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
       decoration: BoxDecoration(
         color: AppColors.softBlue,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         'Últimos reportes',
+        textAlign: TextAlign.center,
         style: Theme.of(context).textTheme.titleSmall?.copyWith(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.w700,
+              fontSize: 15,
             ),
       ),
     );

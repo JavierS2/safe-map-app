@@ -22,9 +22,6 @@ class HomeHeader extends StatelessWidget {
       ),
       decoration: const BoxDecoration(
         color: AppColors.primary,
-        borderRadius: BorderRadius.vertical(
-          bottom: Radius.circular(40),
-        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -36,36 +33,52 @@ class HomeHeader extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Hola, Bienvenido $userName',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
+                      Text(
+                        'Hola, Bienvenido $userName',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                      ),
                     const SizedBox(height: 4),
-                    Text(
-                      greeting,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.white.withOpacity(0.9),
-                          ),
-                    ),
+                      Text(
+                        greeting,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Colors.white.withOpacity(0.95),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                      ),
                   ],
                 ),
               ),
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  shape: BoxShape.circle,
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.primary.withOpacity(0.15),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.06),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.notifications_none,
+                      color: AppColors.primary,
+                      size: 18,
+                    ),
+                  ),
                 ),
-                child: const Icon(
-                  Icons.notifications_none,
-                  color: Colors.white,
-                  size: 20,
-                ),
-              ),
             ],
           ),
 
@@ -77,8 +90,8 @@ class HomeHeader extends StatelessWidget {
             children: [
               Center(
                 child: SizedBox(
-                  height: 80,   // ← ¡Logo más grande!
-                  width: 80,
+                  height: 120,   // ← ¡Logo más grande!
+                  width: 120,
                   child: Image.asset(
                     'assets/images/logo.png',
                     fit: BoxFit.contain,
