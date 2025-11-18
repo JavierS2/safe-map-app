@@ -31,61 +31,73 @@ class AppRoutes {
 
       case splash:
         return MaterialPageRoute(
+          settings: settings,
           builder: (_) => const SplashScreen(),
         );
 
       case welcome:
         return MaterialPageRoute(
+          settings: settings,
           builder: (_) => const WelcomeScreen(),
         );
 
       case login:
         return MaterialPageRoute(
+          settings: settings,
           builder: (_) => const LoginScreen(),
         );
 
       case register:
         return MaterialPageRoute(
+          settings: settings,
           builder: (_) => const Register(),
         );
 
       case forgotPassword:
         return MaterialPageRoute(
+          settings: settings,
           builder: (_) => const ForgotPasswordScreen(),
         );
 
       case newPassword:
         return MaterialPageRoute(
+          settings: settings,
           builder: (_) => const NewPasswordScreen(),
         );
 
       case home:
         return MaterialPageRoute(
+          settings: settings,
           builder: (_) => const HomeScreen(),
         );
 
       case createReport:
         return MaterialPageRoute(
+          settings: settings,
           builder: (_) => const CreateReportScreen(),
         );
 
       case reportSearch:
         return MaterialPageRoute(
+          settings: settings,
           builder: (_) => const ReportSearchScreen(),
         );
 
           case accountSettings:
             return MaterialPageRoute(
+              settings: settings,
               builder: (_) => const AccountSettingsScreen(),
             );
 
         case statistic:
           return MaterialPageRoute(
+            settings: settings,
             builder: (_) => const StatisticScreen(),
           );
 
       default:
         return MaterialPageRoute(
+          settings: settings,
           builder: (_) => Scaffold(
             body: Center(
               child: Text(

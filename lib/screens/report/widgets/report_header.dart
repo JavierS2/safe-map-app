@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../theme/app_colors.dart';
 import '../../../config/routes.dart';
+import '../../../config/route_history.dart';
 
 class ReportHeader extends StatelessWidget {
   final String title;
@@ -19,14 +20,25 @@ class ReportHeader extends StatelessWidget {
           // Botón atrás
           IconButton(
             onPressed: () {
-              // Deterministic back behavior:
-              // - If there's something to pop, pop it.
-              // - Otherwise, go to the app home. This avoids accidentally
-              //   navigating back to auth screens like login.
+              // 1) If there is something to pop in the navigator stack, do it.
               if (Navigator.canPop(context)) {
                 Navigator.pop(context);
                 return;
               }
+
+              // 2) Otherwise try to navigate to the last meaningful route
+              // recorded by the route observer (if any).
+                final current = ModalRoute.of(context)?.settings.name;
+                final prev = appRouteObserver.previousMeaningfulRoute(current) ??
+                  (appRouteObserver.lastRoute != null && appRouteObserver.lastRoute != current
+                    ? appRouteObserver.lastRoute
+                    : null);
+              if (prev != null && prev.isNotEmpty && prev != current) {
+                Navigator.pushReplacementNamed(context, prev);
+                return;
+              }
+
+              // 3) Final fallback: go to app home.
               Navigator.pushReplacementNamed(context, AppRoutes.home);
             },
             icon: const Icon(
