@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../theme/app_colors.dart';
+import '../../../config/routes.dart';
+import '../../../config/route_history.dart';
 
 class ReportHeader extends StatelessWidget {
   final String title;
@@ -17,7 +19,28 @@ class ReportHeader extends StatelessWidget {
         children: [
           // Botón atrás
           IconButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () {
+              // 1) If there is something to pop in the navigator stack, do it.
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+                return;
+              }
+
+              // 2) Otherwise try to navigate to the last meaningful route
+              // recorded by the route observer (if any).
+                final current = ModalRoute.of(context)?.settings.name;
+                final prev = appRouteObserver.previousMeaningfulRoute(current) ??
+                  (appRouteObserver.lastRoute != null && appRouteObserver.lastRoute != current
+                    ? appRouteObserver.lastRoute
+                    : null);
+              if (prev != null && prev.isNotEmpty && prev != current) {
+                Navigator.pushReplacementNamed(context, prev);
+                return;
+              }
+
+              // 3) Final fallback: go to app home.
+              Navigator.pushReplacementNamed(context, AppRoutes.home);
+            },
             icon: const Icon(
               Icons.arrow_back_ios_new_rounded,
               color: Colors.white,

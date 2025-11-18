@@ -4,7 +4,6 @@ import '../../widgets/safe_bottom_nav_bar.dart';
 import '../../config/routes.dart';
 import 'widgets/report_search_bar.dart';
 import 'widgets/report_header.dart';
-import 'widgets/report_result_card.dart';
 import 'widgets/report_filters.dart';
 import 'widgets/report_list.dart';
 

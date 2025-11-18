@@ -12,7 +12,8 @@ class SafeBottomNavBar extends StatelessWidget {
     final String? currentRoute = selectedRoute ?? ModalRoute.of(context)?.settings.name;
     final bool isHomeRoute = currentRoute == AppRoutes.home;
     final bool isSearchRoute = currentRoute == AppRoutes.reportSearch;
-      final bool isAccountRoute = currentRoute == AppRoutes.accountSettings;
+    final bool isStatisticRoute = currentRoute == AppRoutes.statistic;
+    final bool isAccountRoute = currentRoute == AppRoutes.accountSettings;
 
     return Container(
       height: 68,
@@ -44,16 +45,22 @@ class SafeBottomNavBar extends StatelessWidget {
             icon: Icons.search_rounded,
             isSelected: isSearchRoute,
             onTap: () {
-              if (!isSearchRoute) Navigator.pushNamed(context, AppRoutes.reportSearch);
+              if (!isSearchRoute) Navigator.pushReplacementNamed(context, AppRoutes.reportSearch);
             },
           ),
           const _NavItem(icon: Icons.map_rounded),
-          const _NavItem(icon: Icons.bar_chart_rounded),
+          _NavItem(
+            icon: Icons.bar_chart_rounded,
+            isSelected: isStatisticRoute,
+            onTap: () {
+              if (!isStatisticRoute) Navigator.pushReplacementNamed(context, AppRoutes.statistic);
+            },
+          ),
           _NavItem(
             icon: Icons.person_rounded,
             isSelected: isAccountRoute,
             onTap: () {
-              if (!isAccountRoute) Navigator.pushNamed(context, AppRoutes.accountSettings);
+              if (!isAccountRoute) Navigator.pushReplacementNamed(context, AppRoutes.accountSettings);
             },
           ),
         ],
