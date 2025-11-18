@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../theme/app_colors.dart';
+import '../../../config/routes.dart';
 
 class ReportHeader extends StatelessWidget {
   final String title;
@@ -17,7 +18,17 @@ class ReportHeader extends StatelessWidget {
         children: [
           // Botón atrás
           IconButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () {
+              // Deterministic back behavior:
+              // - If there's something to pop, pop it.
+              // - Otherwise, go to the app home. This avoids accidentally
+              //   navigating back to auth screens like login.
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+                return;
+              }
+              Navigator.pushReplacementNamed(context, AppRoutes.home);
+            },
             icon: const Icon(
               Icons.arrow_back_ios_new_rounded,
               color: Colors.white,
