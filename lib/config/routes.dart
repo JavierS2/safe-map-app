@@ -12,6 +12,7 @@ import 'package:safe_map_application/screens/report/report_search_screen.dart';
 import 'package:safe_map_application/screens/account_settings/account_settings_screen.dart';
 import 'package:safe_map_application/screens/statistic/statistic_screen.dart';
 import 'package:safe_map_application/screens/notification/notification_screen.dart';
+import 'package:safe_map_application/screens/map/map_screen.dart';
 
 class AppRoutes {
   // Rutas nombradas
@@ -27,6 +28,7 @@ class AppRoutes {
   static const accountSettings = '/account-settings';
   static const statistic = '/statistic';
   static const notification = '/notification';
+  static const map = '/map';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -101,6 +103,12 @@ class AppRoutes {
           return MaterialPageRoute(
             settings: settings,
             builder: (_) => const NotificationScreen(),
+          );
+
+        case map:
+          return MaterialPageRoute(
+            settings: settings,
+            builder: (_) => const MapScreen(),
           );
 
       default:

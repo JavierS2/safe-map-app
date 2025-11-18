@@ -11,6 +11,9 @@ dependencies:
     sdk: flutter
   google_fonts: ^5.0.0
   image_picker: ^1.1.0
+  flutter_map: ^8.2.2
+  latlong2: ^0.9.1
+  geolocator: ^9.0.2
 
 dev_dependencies:
   flutter_test:

@@ -14,6 +14,7 @@ class SafeBottomNavBar extends StatelessWidget {
     final bool isSearchRoute = currentRoute == AppRoutes.reportSearch;
     final bool isStatisticRoute = currentRoute == AppRoutes.statistic;
     final bool isAccountRoute = currentRoute == AppRoutes.accountSettings;
+    final bool isMapRoute = currentRoute == AppRoutes.map;
 
     return Container(
       height: 68,
@@ -48,7 +49,13 @@ class SafeBottomNavBar extends StatelessWidget {
               if (!isSearchRoute) Navigator.pushReplacementNamed(context, AppRoutes.reportSearch);
             },
           ),
-          const _NavItem(icon: Icons.map_rounded),
+          _NavItem(
+            icon: Icons.map_rounded,
+            isSelected: isMapRoute,
+            onTap: () {
+              if (!isMapRoute) Navigator.pushReplacementNamed(context, AppRoutes.map);
+            },
+          ),
           _NavItem(
             icon: Icons.bar_chart_rounded,
             isSelected: isStatisticRoute,
