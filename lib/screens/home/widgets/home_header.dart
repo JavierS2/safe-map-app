@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:safe_map_application/config/routes.dart';
 import '../../../../theme/app_colors.dart';
 
 class HomeHeader extends StatelessWidget {
@@ -53,29 +54,40 @@ class HomeHeader extends StatelessWidget {
                   ],
                 ),
               ),
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.primary.withOpacity(0.15),
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.06),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(18),
+                    onTap: () {
+                      final current = ModalRoute.of(context)?.settings.name;
+                      if (current == AppRoutes.notification) return;
+                      Navigator.of(context).pushNamed(AppRoutes.notification);
+                    },
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.primary.withOpacity(0.15),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.06),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Icon(
-                      Icons.notifications_none,
-                      color: AppColors.primary,
-                      size: 18,
+                      child: Center(
+                        child: Icon(
+                          Icons.notifications_none,
+                          color: AppColors.primary,
+                          size: 18,
+                        ),
+                      ),
                     ),
                   ),
                 ),
