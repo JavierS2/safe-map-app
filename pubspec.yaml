@@ -9,11 +9,27 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
+  # UI
   google_fonts: ^5.0.0
+
+  # Multimedia
   image_picker: ^1.1.0
+
+  # Mapas y geolocalización
   flutter_map: ^8.2.2
   latlong2: ^0.9.1
   geolocator: ^9.0.2
+
+  # Firebase (necesario para firebase_options.dart)
+  firebase_core: ^2.24.2
+  firebase_auth: ^4.17.8
+  cloud_firestore: ^4.15.8
+  firebase_storage: ^11.6.9
+
+  # Provider (capa de lógica)
+  provider: ^6.0.5
+
 
 dev_dependencies:
   flutter_test:
