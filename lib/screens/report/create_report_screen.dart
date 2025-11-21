@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+
 import '../../theme/app_colors.dart';
 import '../../widgets/safe_bottom_nav_bar.dart';
+import '../../providers/report_provider.dart';
+
 import 'widgets/report_header.dart';
 import 'widgets/report_text_field.dart';
 import 'widgets/report_dropdown_field.dart';
 import 'widgets/evidence_upload_box.dart';
+import 'widgets/barrios_santa_marta.dart';
+import 'package:geolocator/geolocator.dart';
 
 class CreateReportScreen extends StatefulWidget {
   const CreateReportScreen({super.key});
@@ -23,12 +31,31 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   String _selectedCategory = 'Hurto';
   final List<String> _categories = ['Hurto', 'Robo', 'Acoso', 'Otro'];
 
+  DateTime? _selectedDate;
+  TimeOfDay? _selectedTime;
+  GeoPoint? _selectedLocation; // ubicación escogida
+
   @override
   void initState() {
     super.initState();
-    _dateController.text = 'Octubre 29, 2025';
-    _timeController.text = '11:45 P.M';
+
+    final now = DateTime.now();
+    _selectedDate = now;
+    _dateController.text = '${now.day}/${now.month}/${now.year}';
+
+    _selectedTime = TimeOfDay.now();
   }
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Ahora sí podemos usar context aquí
+    if (_timeController.text.isEmpty) {
+      _timeController.text = _selectedTime!.format(context);
+    }
+  }
+
+
 
   @override
   void dispose() {
@@ -43,39 +70,116 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
-      initialDate: now,
+      initialDate: _selectedDate ?? now,
       firstDate: DateTime(now.year - 1),
       lastDate: DateTime(now.year + 1),
     );
 
     if (picked != null) {
       setState(() {
-        _dateController.text =
-            '${picked.day}/${picked.month}/${picked.year}';
+        _selectedDate = picked;
+        _dateController.text = '${picked.day}/${picked.month}/${picked.year}';
       });
     }
   }
 
   Future<void> _selectTime() async {
-    final now = TimeOfDay.now();
     final picked = await showTimePicker(
       context: context,
-      initialTime: now,
+      initialTime: _selectedTime ?? TimeOfDay.now(),
     );
 
     if (picked != null) {
       setState(() {
+        _selectedTime = picked;
         _timeController.text = picked.format(context);
       });
     }
   }
 
-  void _submitReport() {
-    // TODO: enviar datos a tu backend / firestore, etc.
+  Future<void> _setCurrentLocation() async {
+  bool serviceEnabled;
+  LocationPermission permission;
+
+  // Verificar si el GPS está activado
+  serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  if (!serviceEnabled) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Reporte enviado (demo)')),
+      const SnackBar(content: Text("Por favor activa la ubicación del dispositivo.")),
     );
+    return;
   }
+
+  // Verificar permisos
+  permission = await Geolocator.checkPermission();
+  if (permission == LocationPermission.denied) {
+    permission = await Geolocator.requestPermission();
+    if (permission == LocationPermission.denied) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Permiso de ubicación denegado.")),
+      );
+      return;
+    }
+  }
+
+  if (permission == LocationPermission.deniedForever) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Permiso denegado permanentemente. Actívalo desde ajustes."),
+      ),
+    );
+    return;
+  }
+
+  // Obtener ubicación REAL del dispositivo
+  final position = await Geolocator.getCurrentPosition(
+    desiredAccuracy: LocationAccuracy.high,
+  );
+
+  setState(() {
+    _selectedLocation = GeoPoint(position.latitude, position.longitude);
+  });
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text("Ubicación obtenida correctamente.")),
+  );
+}
+
+
+  void _submitReport() async {
+  final provider = Provider.of<ReportProvider>(context, listen: false);
+
+  if (_selectedLocation == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Primero envía tu ubicación.")),
+    );
+    return;
+  }
+
+  final success = await provider.sendReport(
+    date: _selectedDate!,
+    time: _selectedTime!.format(context),
+    category: _selectedCategory,
+    neighborhood: _neighborhoodController.text.trim(),
+    details: _detailsController.text.trim(),
+    lat: _selectedLocation!.latitude,
+    lng: _selectedLocation!.longitude,
+  );
+
+  if (!success) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(provider.errorMessage ?? "Error inesperado")),
+    );
+    return;
+  }
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text("Reporte enviado correctamente")),
+  );
+
+  Navigator.pop(context);
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -85,13 +189,8 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Header azul con título
             const ReportHeader(),
-
-            // extend blue a bit so top of white panel overlays blue
             Container(height: 48, color: AppColors.primary),
-
-            // White rounded panel overlapping the header
             Expanded(
               child: Transform.translate(
                 offset: const Offset(0, -32),
@@ -105,7 +204,8 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                   ),
                   padding: const EdgeInsets.all(20),
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -118,6 +218,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                           onTap: _selectDate,
                         ),
                         const SizedBox(height: 12),
+
                         // Hora
                         ReportTextField(
                           label: 'Hora',
@@ -127,6 +228,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                           onTap: _selectTime,
                         ),
                         const SizedBox(height: 12),
+
                         // Categoría
                         ReportDropdownField(
                           label: 'Categoría',
@@ -139,24 +241,24 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                           },
                         ),
                         const SizedBox(height: 12),
+
                         // Barrio + ubicación
                         Text(
                           'Barrio',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: AppColors.textPrimary,
-                                fontWeight: FontWeight.w600,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: AppColors.textPrimary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                         ),
                         const SizedBox(height: 6),
                         Row(
                           children: [
                             Expanded(
-                              flex: 3,
-                              child: ReportTextField(
-                                controller: _neighborhoodController,
-                                label: null,
-                                hintText: 'Escribe el barrio',
-                              ),
+                                flex: 3,
+                                child: BarrioSearchField(
+                                  controller: _neighborhoodController,
+                                ),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
@@ -179,13 +281,12 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                                   SizedBox(
                                     height: 34,
                                     child: ElevatedButton(
-                                      onPressed: () {
-                                        // TODO: obtener ubicación actual
-                                      },
+                                      onPressed: _setCurrentLocation,
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: AppColors.primary,
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(20),
+                                          borderRadius:
+                                              BorderRadius.circular(20),
                                         ),
                                       ),
                                       child: const Text(
@@ -204,6 +305,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                           ],
                         ),
                         const SizedBox(height: 16),
+
                         // Detalles
                         ReportTextField(
                           label: 'Detalles',
@@ -212,9 +314,11 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                           maxLines: 4,
                         ),
                         const SizedBox(height: 16),
+
                         // Evidencias
                         const EvidenceUploadBox(),
                         const SizedBox(height: 24),
+
                         // Botón Reportar
                         SizedBox(
                           height: 48,

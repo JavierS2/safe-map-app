@@ -1,38 +1,31 @@
 import 'package:flutter/material.dart';
-import '../services/firestore_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../models/report_model.dart';
+import '../services/report_service.dart';
 
-class ReportProvider extends ChangeNotifier {
-  final FirestoreService _firestoreService = FirestoreService();
+class ReportProvider with ChangeNotifier {
+  final ReportService _service = ReportService();
 
-  bool isLoading = false;
+  bool loading = false;
   String? errorMessage;
 
-  // ===========================
-  // CREAR REPORTE
-  // ===========================
-  Future<bool> createReport({
-    required String userId,
+  Future<bool> sendReport({
     required DateTime date,
     required String time,
     required String category,
     required String neighborhood,
     required String details,
-    double? lat,
-    double? lng,
+    required double lat,
+    required double lng,
   }) async {
     try {
-      isLoading = true;
-      errorMessage = null;
+      loading = true;
       notifyListeners();
 
-      // Crear ID único
-      final id = _firestoreService.db.collection("reports").doc().id;
-
-      // Modelo
       final report = ReportModel(
-        id: id,
-        userId: userId,
+        id: _service.generateId(),
+        userId: _service.currentUserId,
         date: date,
         time: time,
         category: category,
@@ -40,19 +33,18 @@ class ReportProvider extends ChangeNotifier {
         details: details,
         lat: lat,
         lng: lng,
+        status: "pendiente",
         createdAt: DateTime.now(),
       );
 
-      // Guardar en Firestore
-      await _firestoreService.saveReport(report);
+      await _service.createReport(report);
 
-      isLoading = false;
+      loading = false;
       notifyListeners();
       return true;
-
     } catch (e) {
-      errorMessage = e.toString();
-      isLoading = false;
+      loading = false;
+      errorMessage = "Error al enviar reporte: $e";
       notifyListeners();
       return false;
     }
