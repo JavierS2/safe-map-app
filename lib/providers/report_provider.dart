@@ -18,6 +18,7 @@ class ReportProvider with ChangeNotifier {
     required String details,
     required double lat,
     required double lng,
+    required List<String> evidences,
   }) async {
     try {
       loading = true;
