@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+// Provider
+import 'package:safe_map_application/providers/auth_provider.dart';
+
+// Rutas nombradas
+import 'package:safe_map_application/config/routes.dart';
+
+// Widgets personalizados
 import 'widgets/EmailInput.dart';
 import 'widgets/password_field.dart';
 import 'widgets/forgot_password_link.dart';
 import 'widgets/register_button.dart';
-import 'package:safe_map_application/config/routes.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,7 +21,9 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  bool obscurePassword = true;
+  // Controladores para obtener email y contraseña
+  final TextEditingController emailCtrl = TextEditingController();
+  final TextEditingController passwordCtrl = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +78,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(height: 10),
 
-                            const EmailInput(),
+                            /// Campo email con controller
+                            EmailInput(controller: emailCtrl),
 
                             const SizedBox(height: 25),
 
@@ -82,7 +93,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(height: 10),
 
-                            PasswordInput(),
+                            /// Campo contraseña con controller
+                            PasswordInput(controller: passwordCtrl),
 
                             const SizedBox(height: 30),
 
@@ -90,11 +102,34 @@ class _LoginScreenState extends State<LoginScreen> {
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton(
-                                onPressed: () {
+                                onPressed: () async {
+                                  final auth = Provider.of<AuthProvider>(
+                                    context,
+                                    listen: false,
+                                  );
+
+                                  final success = await auth.login(
+                                    emailCtrl.text.trim(),
+                                    passwordCtrl.text.trim(),
+                                  );
+
+                                  if (!success) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          auth.errorMessage ??
+                                              "Error al iniciar sesión",
+                                        ),
+                                      ),
+                                    );
+                                    return;
+                                  }
+
+                                  // Redirige SIEMPRE a home
                                   Navigator.pushNamedAndRemoveUntil(
                                     context,
                                     AppRoutes.home,
-                                    (route) => false,
+                                    (_) => false,
                                   );
                                 },
                                 style: ElevatedButton.styleFrom(
@@ -119,14 +154,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
                             const SizedBox(height: 18),
 
-                            // CENTRAR ¿OLVIDASTE LA CONTRASEÑA?
                             const Center(
                               child: ForgotPasswordLink(),
                             ),
 
                             const SizedBox(height: 30),
 
-                            // CENTRAR REGÍSTRATE
                             const Center(
                               child: RegisterButton(),
                             ),
