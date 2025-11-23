@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../theme/app_colors.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/report_provider.dart';
 import 'widgets/home_header.dart';
 import 'widgets/incident_summary_card.dart';
 import 'widgets/latest_reports_title.dart';
@@ -7,28 +10,52 @@ import 'widgets/report_item_card.dart';
 import '../../widgets/safe_bottom_nav_bar.dart';
 import '../../config/routes.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Load today's count once when screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = Provider.of<ReportProvider>(context, listen: false);
+      provider.fetchTodayCount();
+      provider.fetchLatestReports(limit: 3);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final reports = [
-      const ReportItemData(
-        neighborhood: 'El Líbano',
-        dateTime: '30/10/2025 - 07:20',
-        type: 'Hurto simple',
-      ),
-      const ReportItemData(
-        neighborhood: 'Mamatoco',
-        dateTime: '29/10/2025 - 20:15',
-        type: 'Robo violento',
-      ),
-      const ReportItemData(
-        neighborhood: 'El Prado',
-        dateTime: '29/10/2025 - 14:50',
-        type: 'Hurto simple',
-      ),
-    ];
+    final auth = Provider.of<AuthProvider>(context);
+    final reportProvider = Provider.of<ReportProvider>(context);
+    // Determine user's first name
+    String fullName = auth.currentUserData?.fullName ?? auth.currentUser?.displayName ?? 'Usuario';
+    String firstName = fullName.split(' ').where((s) => s.isNotEmpty).toList().first;
+    // Greeting based on local hour
+    final hour = DateTime.now().hour;
+    String greeting;
+    if (hour >= 5 && hour < 12) {
+      greeting = 'Buenos días';
+    } else if (hour >= 12 && hour < 19) {
+      greeting = 'Buenas tardes';
+    } else {
+      greeting = 'Buenas noches';
+    }
+    final reports = reportProvider.latestReports
+        .map(
+          (r) => ReportItemData(
+            neighborhood: r.neighborhood,
+            dateTime:
+                '${r.date.day.toString().padLeft(2, '0')}/${r.date.month.toString().padLeft(2, '0')}/${r.date.year} - ${r.time}',
+            type: r.category,
+          ),
+        )
+        .toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -43,10 +70,10 @@ class HomeScreen extends StatelessWidget {
                 child: IntrinsicHeight(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const HomeHeader(
-                        userName: 'Eduardo',
-                        greeting: 'Buenos días',
+                      children: [
+                      HomeHeader(
+                        userName: firstName,
+                        greeting: greeting,
                       ),
 
                       // Extend the blue background a bit lower so the
@@ -77,7 +104,7 @@ class HomeScreen extends StatelessWidget {
                                 Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 16),
                                   child: IncidentSummaryCard(
-                                    totalToday: 53,
+                                    totalToday: reportProvider.todayCount,
                                     onReportNow: () {
                                       Navigator.pushNamed(context, '/create-report');
                                     },

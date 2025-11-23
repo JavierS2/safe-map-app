@@ -9,6 +9,8 @@ class ReportProvider with ChangeNotifier {
 
   bool loading = false;
   String? errorMessage;
+  int todayCount = 0;
+  List<ReportModel> latestReports = [];
 
   Future<bool> sendReport({
     required DateTime date,
@@ -49,6 +51,28 @@ class ReportProvider with ChangeNotifier {
       errorMessage = "Error al enviar reporte: $e";
       notifyListeners();
       return false;
+    }
+  }
+
+  /// Fetch number of reports created today and notify listeners
+  Future<void> fetchTodayCount() async {
+    try {
+      final count = await _service.countReportsToday();
+      todayCount = count;
+      notifyListeners();
+    } catch (e) {
+      // ignore errors for now; keep previous value
+    }
+  }
+
+  /// Fetch latest reports (limit) and store them
+  Future<void> fetchLatestReports({int limit = 3}) async {
+    try {
+      final list = await _service.getLatestReports(limit);
+      latestReports = list;
+      notifyListeners();
+    } catch (e) {
+      // ignore
     }
   }
 }
