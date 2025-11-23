@@ -338,6 +338,13 @@ class _BarrioSearchFieldState extends State<BarrioSearchField> {
 
   @override
   Widget build(BuildContext context) {
+    // compute dynamic height for the results list (item height ~56)
+    final double maxListHeight = 240.0;
+    const double itemHeight = 56.0;
+    double listHeight = (filtered.length * itemHeight);
+    if (listHeight < itemHeight) listHeight = itemHeight;
+    if (listHeight > maxListHeight) listHeight = maxListHeight;
+
     return Column(
       children: [
         TextField(
@@ -353,10 +360,9 @@ class _BarrioSearchFieldState extends State<BarrioSearchField> {
           ),
         ),
 
-        // Lista desplegable de resultados
+        // Lista desplegable de resultados (height adjusts to content, up to max)
         if (showList)
           Container(
-            height: 200,
             margin: const EdgeInsets.only(top: 5),
             decoration: BoxDecoration(
               color: Colors.white,
@@ -370,18 +376,22 @@ class _BarrioSearchFieldState extends State<BarrioSearchField> {
                 ),
               ],
             ),
-            child: ListView.builder(
-              itemCount: filtered.length,
-              itemBuilder: (context, index) {
-                final barrio = filtered[index];
-                return ListTile(
-                  title: Text(barrio),
-                  onTap: () {
-                    widget.controller.text = barrio;
-                    setState(() => showList = false);
-                  },
-                );
-              },
+            child: SizedBox(
+              height: listHeight,
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                itemCount: filtered.length,
+                itemBuilder: (context, index) {
+                  final barrio = filtered[index];
+                  return ListTile(
+                    title: Text(barrio),
+                    onTap: () {
+                      widget.controller.text = barrio;
+                      setState(() => showList = false);
+                    },
+                  );
+                },
+              ),
             ),
           ),
       ],

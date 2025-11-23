@@ -30,6 +30,9 @@ dependencies:
   # Provider (capa de lógica)
   provider: ^6.0.5
 
+  # Cloudinary - Almacenamiento de imágenes y vídeos
+  cloudinary_public: ^0.23.1
+
 
 dev_dependencies:
   flutter_test:

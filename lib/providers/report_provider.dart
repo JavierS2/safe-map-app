@@ -18,6 +18,7 @@ class ReportProvider with ChangeNotifier {
     required String details,
     required double lat,
     required double lng,
+    required List<String> evidences,
   }) async {
     try {
       loading = true;
@@ -35,6 +36,7 @@ class ReportProvider with ChangeNotifier {
         lng: lng,
         status: "pendiente",
         createdAt: DateTime.now(),
+        evidences: evidences,
       );
 
       await _service.createReport(report);
