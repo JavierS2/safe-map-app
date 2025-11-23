@@ -35,7 +35,7 @@ class HomeHeader extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                       Text(
-                        'Hola, Bienvenido $userName',
+                        'Hola, Bienvenido/a $userName',
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
