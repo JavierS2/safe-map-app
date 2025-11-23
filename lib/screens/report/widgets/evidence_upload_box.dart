@@ -24,6 +24,7 @@ class _EvidenceUploadBoxState extends State<EvidenceUploadBox> {
 
   bool _uploading = false;
   final List<String> _evidenceUrls = [];
+  static const int _maxBytes = 5 * 1024 * 1024; // 5 MB
 
   Future<void> _pickImage() async {
     final XFile? picked = await _picker.pickImage(
@@ -31,6 +32,30 @@ class _EvidenceUploadBoxState extends State<EvidenceUploadBox> {
       imageQuality: 80,
     );
     if (picked == null) return;
+
+    // Validate size before uploading
+    try {
+      final bytes = await picked.length();
+      if (bytes > _maxBytes) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('El archivo excede el tamaño máximo de 5 MB')),
+          );
+        }
+        return;
+      }
+    } catch (_) {
+      // If we can't get length, fall back to file length check
+      final file = File(picked.path);
+      if (file.existsSync() && file.lengthSync() > _maxBytes) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('El archivo excede el tamaño máximo de 5 MB')),
+          );
+        }
+        return;
+      }
+    }
 
     await _uploadFile(File(picked.path), isVideo: false);
   }
@@ -41,6 +66,29 @@ class _EvidenceUploadBoxState extends State<EvidenceUploadBox> {
       maxDuration: const Duration(seconds: 30),
     );
     if (picked == null) return;
+
+    // Validate size before uploading
+    try {
+      final bytes = await picked.length();
+      if (bytes > _maxBytes) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('El archivo excede el tamaño máximo de 5 MB')),
+          );
+        }
+        return;
+      }
+    } catch (_) {
+      final file = File(picked.path);
+      if (file.existsSync() && file.lengthSync() > _maxBytes) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('El archivo excede el tamaño máximo de 5 MB')),
+          );
+        }
+        return;
+      }
+    }
 
     await _uploadFile(File(picked.path), isVideo: true);
   }
@@ -123,7 +171,7 @@ class _EvidenceUploadBoxState extends State<EvidenceUploadBox> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      '.JPG, .PNG, .MP4 - Tamaño Máx 10MB',
+                      '.JPG, .PNG, .MP4 - Tamaño Máx 5MB',
                       style: textTheme.bodySmall?.copyWith(
                         color: AppColors.textSecondary,
                       ),

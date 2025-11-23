@@ -36,6 +36,7 @@ class ReportProvider with ChangeNotifier {
         lng: lng,
         status: "pendiente",
         createdAt: DateTime.now(),
+        evidences: evidences,
       );
 
       await _service.createReport(report);

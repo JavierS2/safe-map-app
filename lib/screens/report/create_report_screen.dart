@@ -27,8 +27,8 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
       TextEditingController();
   final TextEditingController _detailsController = TextEditingController();
 
-  String _selectedCategory = 'Hurto';
-  final List<String> _categories = ['Hurto', 'Robo', 'Acoso', 'Otro'];
+  String _selectedCategory = 'Hurto simple';
+  final List<String> _categories = ['Hurto simple', 'Robo violento', 'Otro'];
 
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
