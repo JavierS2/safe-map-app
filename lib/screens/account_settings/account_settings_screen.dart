@@ -15,6 +15,7 @@ import 'widgets/field_label.dart';
 import 'widgets/custom_form_field.dart';
 import 'widgets/phone_field.dart';
 import 'widgets/action_buttons.dart';
+import '../report/widgets/barrios_santa_marta.dart';
 
 class AccountSettingsScreen extends StatefulWidget {
   const AccountSettingsScreen({Key? key}) : super(key: key);
@@ -154,7 +155,15 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                                                   CustomFormField(controller: _email_controller_fallback(), hint: 'example@example.com', keyboardType: TextInputType.emailAddress, validator: (v) { if (v == null || v.trim().isEmpty) return 'El email es requerido'; final emailRegex = RegExp(r"^[^@\s]+@[^@\s]+\.[^@\s]+$"); if (!emailRegex.hasMatch(v)) return 'Email inválido'; return null; }),
                                                   const SizedBox(height: 12),
                                                   FieldLabel('Barrio De Residencia'),
-                                                  CustomFormField(controller: _neighborhoodController, hint: 'Barrio', validator: (v) => (v == null || v.trim().isEmpty) ? 'El barrio es requerido' : null),
+                                                  // keep visual style similar to other form fields but use the BarrioSearchField
+                                                  Container(
+                                                    decoration: BoxDecoration(
+                                                      color: AppColors.softBlue,
+                                                      borderRadius: BorderRadius.circular(16),
+                                                    ),
+                                                    padding: const EdgeInsets.all(8),
+                                                    child: BarrioSearchField(controller: _neighborhoodController),
+                                                  ),
                                                   const SizedBox(height: 18),
                                                   Row(
                                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -181,6 +190,11 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                                                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Por favor corrige los errores')));
                                                         return;
                                                       }
+                                                        // Ensure neighborhood is set (BarrioSearchField isn't a FormField)
+                                                        if ((_neighborhoodController.text.trim()).isEmpty) {
+                                                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('El barrio es requerido')));
+                                                          return;
+                                                        }
 
                                                       setState(() => _isSaving = true);
 
