@@ -38,6 +38,17 @@ class ReportService {
     return snap.docs.map((d) => ReportModel.fromMap(d.id, d.data())).toList();
   }
 
+  /// Get reports whose `date` field falls within the given month (year, month)
+  Future<List<ReportModel>> getReportsForMonth(int year, int month) async {
+    final start = DateTime(year, month, 1);
+    final end = (month < 12) ? DateTime(year, month + 1, 1).subtract(const Duration(milliseconds: 1)) : DateTime(year + 1, 1, 1).subtract(const Duration(milliseconds: 1));
+    final startTs = Timestamp.fromDate(start);
+    final endTs = Timestamp.fromDate(end);
+
+    final snap = await _db.collection('reports').where('date', isGreaterThanOrEqualTo: startTs).where('date', isLessThanOrEqualTo: endTs).get();
+    return snap.docs.map((d) => ReportModel.fromMap(d.id, d.data())).toList();
+  }
+
   String generateId() {
     return _db.collection("reports").doc().id;
   }

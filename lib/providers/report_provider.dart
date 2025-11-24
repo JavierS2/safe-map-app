@@ -12,6 +12,11 @@ class ReportProvider with ChangeNotifier {
   int todayCount = 0;
   List<ReportModel> latestReports = [];
   List<ReportModel> allReports = [];
+  // Monthly stats
+  List<Map<String, String>> monthlyTopNeighborhoods = [];
+  List<double> monthlyDonutValues = [];
+  List<String> monthlyDonutLabels = [];
+  List<String> monthlyDonutPercents = [];
 
   Future<bool> sendReport({
     required DateTime date,
@@ -82,6 +87,69 @@ class ReportProvider with ChangeNotifier {
     try {
       final list = await _service.getAllReports();
       allReports = list;
+      notifyListeners();
+    } catch (e) {
+      // ignore for now
+    }
+  }
+
+  /// Fetch rankings for the specified month (defaults to current month)
+  Future<void> fetchMonthlyStats({DateTime? forMonth}) async {
+    try {
+      final now = forMonth ?? DateTime.now();
+      final year = now.year;
+      final month = now.month;
+      final reports = await _service.getReportsForMonth(year, month);
+
+      // Neighborhood counts
+      final Map<String, int> neighCounts = {};
+      for (final r in reports) {
+        final name = (r.neighborhood).trim();
+        if (name.isEmpty) continue;
+        neighCounts[name] = (neighCounts[name] ?? 0) + 1;
+      }
+
+      final sortedNeigh = neighCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+
+      final List<Map<String, String>> topNeigh = [];
+      for (var i = 0; i < sortedNeigh.length; i++) {
+        final e = sortedNeigh[i];
+        topNeigh.add({'rank': '${i + 1}', 'name': e.key, 'count': '${e.value}'});
+      }
+
+      // Hour buckets (4-hour buckets: 0..5)
+      final Map<int, int> bucketCounts = {}; // bucket -> count
+      for (final r in reports) {
+        final local = r.date.toLocal();
+        final hour = local.hour; // 0..23
+        final bucket = hour ~/ 4; // 0..5
+        bucketCounts[bucket] = (bucketCounts[bucket] ?? 0) + 1;
+      }
+
+      final totalBucket = bucketCounts.values.fold<int>(0, (p, e) => p + e);
+      final sortedBuckets = bucketCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+
+      // prepare top 3 donut values and labels
+      final List<double> donutVals = [];
+      final List<String> donutLabels = [];
+      final List<String> donutPercs = [];
+      final int topN = sortedBuckets.length < 3 ? sortedBuckets.length : 3;
+      for (var i = 0; i < topN; i++) {
+        final b = sortedBuckets[i];
+        final cnt = b.value;
+        final fraction = totalBucket > 0 ? (cnt / totalBucket) : 0.0;
+        donutVals.add(fraction);
+        final startHour = b.key * 4;
+        final endHour = b.key * 4 + 3;
+        final label = '${startHour.toString().padLeft(2, '0')}:00 - ${endHour.toString().padLeft(2, '0')}:59';
+        donutLabels.add(label);
+        donutPercs.add('${(fraction * 100).round()}%');
+      }
+
+      monthlyTopNeighborhoods = topNeigh;
+      monthlyDonutValues = donutVals;
+      monthlyDonutLabels = donutLabels;
+      monthlyDonutPercents = donutPercs;
       notifyListeners();
     } catch (e) {
       // ignore for now

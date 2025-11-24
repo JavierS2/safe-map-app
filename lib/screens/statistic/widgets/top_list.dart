@@ -12,7 +12,7 @@ class TopList extends StatefulWidget {
   final List<Map<String, String>>? data;
   final int initialVisible;
 
-  const TopList({Key? key, this.data, this.initialVisible = 4}) : super(key: key);
+  const TopList({Key? key, this.data, this.initialVisible = 3}) : super(key: key);
 
   @override
   State<TopList> createState() => _TopListState();
@@ -21,22 +21,9 @@ class TopList extends StatefulWidget {
 class _TopListState extends State<TopList> {
   bool _expanded = false;
 
-  List<Map<String, String>> get _defaultData => [
-        {'rank': '1', 'name': 'El Pando', 'count': '19'},
-        {'rank': '2', 'name': 'Bello Horizonte', 'count': '15'},
-        {'rank': '3', 'name': 'El Líbano', 'count': '10'},
-        {'rank': '4', 'name': 'Bonda', 'count': '10'},
-        {'rank': '5', 'name': 'Los Almendros', 'count': '9'},
-        {'rank': '6', 'name': 'La Esperanza', 'count': '8'},
-        {'rank': '7', 'name': 'San Martín', 'count': '7'},
-        {'rank': '8', 'name': 'El Prado', 'count': '6'},
-        {'rank': '9', 'name': 'Villa Nueva', 'count': '5'},
-        {'rank': '10', 'name': 'Rincón del Sol', 'count': '4'},
-      ];
-
   @override
   Widget build(BuildContext context) {
-    final rows = widget.data ?? _defaultData;
+    final rows = (widget.data ?? <Map<String, String>>[]).take(10).toList();
     final visibleCount = _expanded ? rows.length : (rows.length >= widget.initialVisible ? widget.initialVisible : rows.length);
 
     return Column(
@@ -44,7 +31,21 @@ class _TopListState extends State<TopList> {
       children: [
         const _TopListHeader(),
         const SizedBox(height: 8),
-        ...rows.take(visibleCount).map((e) => _TopListItem(rank: e['rank']!, name: e['name']!, count: e['count']!)),
+        if (rows.isEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Center(child: Text('No hay barrios reportados', style: Theme.of(context).textTheme.bodySmall)),
+          )
+        ] else ...[
+          ...rows.take(visibleCount).toList().asMap().entries.map((entry) {
+            final idx = entry.key;
+            final e = entry.value;
+            final rank = (idx + 1).toString();
+            final name = e['name'] ?? '';
+            final count = e['count'] ?? '0';
+            return _TopListItem(rank: rank, name: name, count: count);
+          }),
+        ],
         if (rows.length > widget.initialVisible) ...[
           const SizedBox(height: 8),
           Center(
