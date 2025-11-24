@@ -7,6 +7,7 @@ import 'widgets/home_header.dart';
 import 'widgets/incident_summary_card.dart';
 import 'widgets/latest_reports_title.dart';
 import 'widgets/report_item_card.dart';
+import '../map/widgets/report_bottom_sheet.dart';
 import '../../widgets/safe_bottom_nav_bar.dart';
 import '../../config/routes.dart';
 
@@ -46,16 +47,8 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       greeting = 'Buenas noches';
     }
-    final reports = reportProvider.latestReports
-        .map(
-          (r) => ReportItemData(
-            neighborhood: r.neighborhood,
-            dateTime:
-                '${r.date.day.toString().padLeft(2, '0')}/${r.date.month.toString().padLeft(2, '0')}/${r.date.year} - ${r.time}',
-            type: r.category,
-          ),
-        )
-        .toList();
+    final reports = reportProvider.latestReports;
+    final lastViewed = reportProvider.lastViewedReport;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -113,6 +106,37 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
 
                                 const SizedBox(height: 24),
+                                // If there's a last viewed report, show it prominently
+                                if (lastViewed != null) ...[
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 16),
+                                    child: Text('Último reporte visto', style: TextStyle(fontWeight: FontWeight.w700)),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    child: ReportItemCard(
+                                      data: ReportItemData(
+                                        neighborhood: lastViewed.neighborhood,
+                                        dateTime:
+                                            '${lastViewed.date.day.toString().padLeft(2, '0')}/${lastViewed.date.month.toString().padLeft(2, '0')}/${lastViewed.date.year} - ${lastViewed.time}',
+                                        type: lastViewed.category,
+                                      ),
+                                      onDetailsPressed: () async {
+                                        // Show details and keep it as last viewed
+                                        showModalBottomSheet(
+                                          context: context,
+                                          isScrollControlled: true,
+                                          shape: const RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                                          ),
+                                          builder: (_) => ReportBottomSheet(report: lastViewed),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                ],
                                 const Padding(
                                   padding: EdgeInsets.symmetric(horizontal: 16),
                                   child: LatestReportsTitle(),
@@ -126,8 +150,25 @@ class _HomeScreenState extends State<HomeScreen> {
                                           (r) => Padding(
                                             padding: const EdgeInsets.only(bottom: 12),
                                             child: ReportItemCard(
-                                              data: r,
-                                              onDetailsPressed: () {},
+                                              data: ReportItemData(
+                                                neighborhood: r.neighborhood,
+                                                dateTime:
+                                                    '${r.date.day.toString().padLeft(2, '0')}/${r.date.month.toString().padLeft(2, '0')}/${r.date.year} - ${r.time}',
+                                                type: r.category,
+                                              ),
+                                              onDetailsPressed: () async {
+                                                // Show report details and mark as viewed
+                                                final provider = Provider.of<ReportProvider>(context, listen: false);
+                                                provider.viewReport(r);
+                                                showModalBottomSheet(
+                                                  context: context,
+                                                  isScrollControlled: true,
+                                                  shape: const RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                                                  ),
+                                                  builder: (_) => ReportBottomSheet(report: r),
+                                                );
+                                              },
                                             ),
                                           ),
                                         )

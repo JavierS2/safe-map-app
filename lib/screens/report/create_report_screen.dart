@@ -11,7 +11,7 @@ import 'widgets/report_text_field.dart';
 import 'widgets/report_dropdown_field.dart';
 import 'widgets/evidence_upload_box.dart';
 import 'widgets/barrios_santa_marta.dart';
-import 'package:geolocator/geolocator.dart';
+import 'location_picker_screen.dart';
 
 class CreateReportScreen extends StatefulWidget {
   const CreateReportScreen({super.key});
@@ -98,56 +98,34 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   }
 
   Future<void> _setCurrentLocation() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Por favor activa la ubicación del dispositivo.")),
-      );
-      return;
-    }
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Permiso de ubicación denegado.")),
-        );
-        return;
-      }
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Permiso denegado permanentemente. Actívalo desde ajustes."),
-        ),
-      );
-      return;
-    }
-
-    final position = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
+    // Open a map picker that centers on device location and allows the user
+    // to adjust the marker. Returns a GeoPoint when the user confirms.
+    final result = await Navigator.of(context).push<GeoPoint>(
+      MaterialPageRoute(builder: (_) => const LocationPickerScreen()),
     );
-
-    setState(() {
-      _selectedLocation = GeoPoint(position.latitude, position.longitude);
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Ubicación obtenida correctamente.")),
-    );
+    if (result != null) {
+      setState(() {
+        _selectedLocation = result;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Ubicación seleccionada.")),
+      );
+    }
   }
 
   void _submitReport() async {
     final provider = Provider.of<ReportProvider>(context, listen: false);
-
     if (_selectedLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Primero envía tu ubicación.")),
+      );
+      return;
+    }
+
+    // Validate barrio is provided
+    if ((_neighborhoodController.text.trim()).isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("El barrio es obligatorio.")),
       );
       return;
     }

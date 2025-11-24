@@ -63,33 +63,14 @@ class ReportDetailsSheet extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(report.category, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 6),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
-                                decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.12), borderRadius: BorderRadius.circular(20)),
-                                child: Text(report.category, style: const TextStyle(color: AppColors.primary)),
-                              ),
-                            ]),
-                            const SizedBox(height: 6),
-                            // Brief description shown under the title area (compact)
-                            Builder(builder: (_) {
-                              final desc = report.details.trim();
-                              final brief = desc.isNotEmpty
-                                  ? (desc.length > 120 ? '${desc.substring(0, 120).trim()}…' : desc)
-                                  : 'Sin descripción disponible.';
-                              return Text(
-                                brief,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontSize: 13, color: Colors.black54),
-                              );
-                            }),
-                          ],
+                        // Fixed title
+                        Text('Reporte', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        // Category badge shown under the title
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+                          decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.12), borderRadius: BorderRadius.circular(20)),
+                          child: Text(report.category, style: const TextStyle(color: AppColors.primary)),
                         ),
                       ],
                     ),

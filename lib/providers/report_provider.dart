@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../models/report_model.dart';
 import '../services/report_service.dart';
 
@@ -12,6 +10,7 @@ class ReportProvider with ChangeNotifier {
   int todayCount = 0;
   List<ReportModel> latestReports = [];
   List<ReportModel> allReports = [];
+  ReportModel? lastViewedReport;
   // Monthly stats
   List<Map<String, String>> monthlyTopNeighborhoods = [];
   List<double> monthlyDonutValues = [];
@@ -48,6 +47,16 @@ class ReportProvider with ChangeNotifier {
       );
 
       await _service.createReport(report);
+      // After creating a report, refresh key views so UI (home screen)
+      // shows the updated counts and latest reports in real-time.
+      await fetchTodayCount();
+      await fetchLatestReports(limit: 3);
+
+      // Also insert into in-memory allReports if already loaded to keep
+      // other views consistent without forcing a full reload.
+      if (allReports.isNotEmpty) {
+        allReports.insert(0, report);
+      }
 
       loading = false;
       notifyListeners();
@@ -154,5 +163,11 @@ class ReportProvider with ChangeNotifier {
     } catch (e) {
       // ignore for now
     }
+  }
+
+  /// Mark a report as viewed (used by UI to show 'último reporte visualizado')
+  void viewReport(ReportModel r) {
+    lastViewedReport = r;
+    notifyListeners();
   }
 }
