@@ -58,16 +58,6 @@ class AuthProvider extends ChangeNotifier {
       // 3. Guardarlo en Firestore
       await _firestoreService.saveUser(user);
 
-      print(">>> INICIANDO REGISTRO");
-      print("Datos recibidos:");
-      print("Nombre: $fullName");
-      print("Email: $email");
-      print("Password: $password");
-      print("Teléfono: $phone");
-      print("Barrio: $neighborhood");
-      print("Cédula: $documentId");
-      print("Fecha nacimiento: $birthDate");
-
 
       isLoading = false;
       notifyListeners();
@@ -124,7 +114,86 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
     return false;
   }
-}
+
+  }
+
+  /// Fetch current user document from Firestore and populate `currentUserData`.
+  Future<void> fetchCurrentUserData() async {
+    try {
+      isLoading = true;
+      notifyListeners();
+      final firebaseUser = _authService.currentUser;
+      if (firebaseUser == null) {
+        isLoading = false;
+        notifyListeners();
+        return;
+      }
+      final data = await _firestoreService.getUser(firebaseUser.uid);
+      if (data == null) {
+        isLoading = false;
+        notifyListeners();
+        return;
+      }
+      currentUserData = UserModel.fromMap(data);
+      isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Update current user's profile fields in Firestore and locally.
+  Future<bool> updateProfile({required String fullName, required String phone, required String neighborhood, String? email, String? profileImageUrl}) async {
+    try {
+      final firebaseUser = _authService.currentUser;
+      if (firebaseUser == null || currentUserData == null) return false;
+
+      isLoading = true;
+      notifyListeners();
+
+      final uid = firebaseUser.uid;
+
+      final Map<String, dynamic> data = {
+        'fullName': fullName,
+        'phone': phone,
+        'neighborhood': neighborhood,
+      };
+
+      // If email needs update in Firestore profile (not Auth), include it
+      if (email != null && email.trim().isNotEmpty) {
+        data['email'] = email.trim();
+      }
+      if (profileImageUrl != null && profileImageUrl.trim().isNotEmpty) {
+        data['profileImageUrl'] = profileImageUrl.trim();
+      }
+
+      await _firestoreService.updateUser(uid, data);
+
+      // update local model preserving other fields
+      currentUserData = UserModel(
+        uid: currentUserData!.uid,
+        fullName: fullName,
+        email: email ?? currentUserData!.email,
+        profileImageUrl: profileImageUrl ?? currentUserData!.profileImageUrl,
+        phone: phone,
+        birthDate: currentUserData!.birthDate,
+        neighborhood: neighborhood,
+        documentId: currentUserData!.documentId,
+        role: currentUserData!.role,
+        createdAt: currentUserData!.createdAt,
+      );
+
+      isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      isLoading = false;
+      errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+    }
 
   // ===========================
   // LOGOUT
@@ -133,4 +202,5 @@ class AuthProvider extends ChangeNotifier {
     await _authService.logout();
     notifyListeners();
   }
+
 }
