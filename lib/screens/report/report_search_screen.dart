@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/report_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/safe_bottom_nav_bar.dart';
 import '../../config/routes.dart';
@@ -22,33 +24,15 @@ class _ReportSearchScreenState extends State<ReportSearchScreen> {
   double? _lastConstraintsMaxHeight;
   bool _useOuterPadding = false;
 
-  final List<Map<String, String>> _allReports = [
-    {
-      'neighborhood': 'El Líbano',
-      'dateTime': '30/10/2025 - 07:20',
-      'type': 'Hurto simple',
-      'description': 'Arrebato de celular en zona turística cerca al parque.',
-    },
-    {
-      'neighborhood': 'Mamatoco',
-      'dateTime': '29/10/2025 - 20:15',
-      'type': 'Robo violento',
-      'description': 'Intento de robo con arma en la vía principal.',
-    },
-    {
-      'neighborhood': 'El Prado',
-      'dateTime': '29/10/2025 - 14:50',
-      'type': 'Hurto simple',
-      'description': 'Hurto de pertenencias en transporte público.',
-    },
-  ];
+  List<Map<String, String>> _allReports = [];
 
   List<Map<String, String>> _filtered = [];
   String? _selectedCategory;
   String? _selectedNeighborhood;
   String? _selectedNeighborhoodFilter;
   DateTime? _selectedDate;
-  TimeOfDay? _selectedTime;
+  TimeOfDay? _selectedTimeStart;
+  TimeOfDay? _selectedTimeEnd;
   String _normalizedQuery = '';
 
   String _normalize(String? s) {
@@ -80,8 +64,27 @@ class _ReportSearchScreenState extends State<ReportSearchScreen> {
   @override
   void initState() {
     super.initState();
-    _filtered = List.from(_allReports);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _updateReservePadding());
+    _filtered = [];
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final provider = Provider.of<ReportProvider>(context, listen: false);
+      await provider.fetchAllReports();
+
+      if (!mounted) return;
+      setState(() {
+        _allReports = provider.allReports
+            .map((r) => {
+                  'neighborhood': r.neighborhood,
+                  'dateTime':
+                      '${r.date.day.toString().padLeft(2, '0')}/${r.date.month.toString().padLeft(2, '0')}/${r.date.year} - ${r.time}',
+                  'type': r.category,
+                  'description': r.details,
+                })
+            .toList();
+        _filtered = List.from(_allReports);
+      });
+
+      _updateReservePadding();
+    });
   }
 
   void _onSearchChanged(String q) {
@@ -127,12 +130,42 @@ class _ReportSearchScreenState extends State<ReportSearchScreen> {
           if (dateStr != expected) return false;
         }
 
-        if (_selectedTime != null) {
+        // Time range filtering: parse the report time and ensure it falls within start/end if provided
+        if (_selectedTimeStart != null || _selectedTimeEnd != null) {
           final parts = (r['dateTime'] ?? '').split(' - ');
           if (parts.length < 2) return false;
-          final timeStr = parts[1]; // HH:mm
-          final expected = '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}';
-          if (timeStr != expected) return false;
+          final timeStr = parts[1].trim(); // could be '07:20', '7:20 AM', '11:45 PM', etc.
+
+          int? parseTimeToMinutes(String s) {
+            final reg = RegExp(r"^(\d{1,2}):(\d{2})(?:\s*([AaPp][Mm]))?");
+            final m = reg.firstMatch(s);
+            if (m == null) return null;
+            final hStr = m.group(1);
+            final mStr = m.group(2);
+            final ampm = m.group(3);
+            final h = int.tryParse(hStr ?? '0');
+            final min = int.tryParse(mStr ?? '0');
+            if (h == null || min == null) return null;
+            var hour = h;
+            if (ampm != null) {
+              final a = ampm.toLowerCase();
+              if (a == 'pm' && hour < 12) hour += 12;
+              if (a == 'am' && hour == 12) hour = 0;
+            }
+            return hour * 60 + min;
+          }
+
+          final minutesOfDay = parseTimeToMinutes(timeStr);
+          if (minutesOfDay == null) return false;
+
+          if (_selectedTimeStart != null) {
+            final int startMinutes = _selectedTimeStart!.hour * 60 + _selectedTimeStart!.minute;
+            if (minutesOfDay < startMinutes) return false;
+          }
+          if (_selectedTimeEnd != null) {
+            final int endMinutes = _selectedTimeEnd!.hour * 60 + _selectedTimeEnd!.minute;
+            if (minutesOfDay > endMinutes) return false;
+          }
         }
 
         return true;
@@ -176,7 +209,8 @@ class _ReportSearchScreenState extends State<ReportSearchScreen> {
   }
 
   Future<void> _showCategoryPicker() async {
-    final categories = _allReports.map((e) => e['type'] ?? '').toSet().toList();
+    // Fixed category list as requested
+    final categories = ['Hurto Simple', 'Robo Violento', 'Otro'];
     final picked = await showModalBottomSheet<String?>(
       context: context,
       builder: (ctx) {
@@ -214,6 +248,7 @@ class _ReportSearchScreenState extends State<ReportSearchScreen> {
           ),
           actions: [
             TextButton(onPressed: () => Navigator.of(ctx).pop(null), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.of(ctx).pop(''), child: const Text('Clear')),
             TextButton(onPressed: () => Navigator.of(ctx).pop(controller.text.trim()), child: const Text('Apply')),
           ],
         );
@@ -233,29 +268,119 @@ class _ReportSearchScreenState extends State<ReportSearchScreen> {
   }
 
   Future<void> _pickDate() async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
+    // Use a bottom sheet with an inline CalendarDatePicker so we can provide Clear
+    DateTime temp = _selectedDate ?? DateTime.now();
+    final picked = await showModalBottomSheet<DateTime?>(
       context: context,
-      initialDate: _selectedDate ?? now,
-      firstDate: DateTime(now.year - 5),
-      lastDate: DateTime(now.year + 5),
+      isScrollControlled: true,
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton(onPressed: () => Navigator.of(ctx).pop(null), child: const Text('Clear')),
+                    TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),
+                    TextButton(onPressed: () => Navigator.of(ctx).pop(temp), child: const Text('Apply')),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: 320,
+                child: CalendarDatePicker(
+                  initialDate: temp,
+                  firstDate: DateTime(temp.year - 5),
+                  lastDate: DateTime(temp.year + 5),
+                  onDateChanged: (d) {
+                    temp = d;
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
-    if (picked != null) {
-      _selectedDate = picked;
+
+    final DateTime? pickedDate = picked;
+    if (pickedDate == null) {
+      // cleared
+      if (_selectedDate != null) {
+        _selectedDate = null;
+        _applyFilters();
+      }
+    } else {
+      _selectedDate = pickedDate;
+      _applyFilters();
+    }
+  }
+
+  Future<void> _showTimeRangePicker() async {
+    TimeOfDay? tempStart = _selectedTimeStart;
+    TimeOfDay? tempEnd = _selectedTimeEnd;
+
+    final result = await showModalBottomSheet<bool?>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Clear')),
+                    TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),
+                    TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Apply')),
+                  ],
+                ),
+              ),
+              ListTile(
+                title: const Text('Hora inicio'),
+                subtitle: Text(tempStart?.format(ctx) ?? 'No establecido'),
+                onTap: () async {
+                  final picked = await showTimePicker(context: ctx, initialTime: tempStart ?? TimeOfDay(hour: 0, minute: 0));
+                  if (picked != null) tempStart = picked;
+                },
+              ),
+              ListTile(
+                title: const Text('Hora fin'),
+                subtitle: Text(tempEnd?.format(ctx) ?? 'No establecido'),
+                onTap: () async {
+                  final picked = await showTimePicker(context: ctx, initialTime: tempEnd ?? TimeOfDay(hour: 23, minute: 59));
+                  if (picked != null) tempEnd = picked;
+                },
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (result == false) {
+      // Clear requested
+      _selectedTimeStart = null;
+      _selectedTimeEnd = null;
+      _applyFilters();
+    } else if (result == true) {
+      _selectedTimeStart = tempStart;
+      _selectedTimeEnd = tempEnd;
       _applyFilters();
     }
   }
 
   Future<void> _pickTime() async {
-    final now = TimeOfDay.now();
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: _selectedTime ?? now,
-    );
-    if (picked != null) {
-      _selectedTime = picked;
-      _applyFilters();
-    }
+    await _showTimeRangePicker();
   }
 
   @override
@@ -316,11 +441,15 @@ class _ReportSearchScreenState extends State<ReportSearchScreen> {
                                     categoryLabel: _selectedCategory ?? 'Categoría',
                                     neighborhoodLabel: _selectedNeighborhood ?? 'Barrio',
                                     dateLabel: _selectedDate != null
-                                        ? '${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}'
-                                        : 'Fecha',
-                                    timeLabel: _selectedTime != null
-                                        ? '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}'
-                                        : 'Hora',
+                                      ? '${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}'
+                                      : 'Fecha',
+                                    timeLabel: (_selectedTimeStart == null && _selectedTimeEnd == null)
+                                      ? 'Hora'
+                                      : (_selectedTimeStart != null && _selectedTimeEnd != null)
+                                        ? '${_selectedTimeStart!.format(context)} - ${_selectedTimeEnd!.format(context)}'
+                                        : (_selectedTimeStart != null)
+                                          ? 'Desde ${_selectedTimeStart!.format(context)}'
+                                          : 'Hasta ${_selectedTimeEnd!.format(context)}',
                                     onCategoryTap: _showCategoryPicker,
                                     onNeighborhoodTap: _showNeighborhoodDialog,
                                     onDateTap: _pickDate,
