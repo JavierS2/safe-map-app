@@ -10,6 +10,7 @@ class UserModel {
   final String documentId;   // String por seguridad
   final String role;
   final DateTime createdAt;
+  final String? profileImageUrl;
 
   UserModel({
     required this.uid,
@@ -21,6 +22,7 @@ class UserModel {
     required this.documentId,
     required this.role,
     required this.createdAt,
+    this.profileImageUrl,
   });
   // Convertir Firestore → UserModel  
   factory UserModel.fromMap(Map<String, dynamic> data) {
@@ -34,6 +36,7 @@ class UserModel {
       documentId: data['documentId'],
       role: data['role'],
       createdAt: (data['createdAt'] as Timestamp).toDate(),
+      profileImageUrl: data['profileImageUrl'] as String?,
     );
   }
   // Convertir UserModel → Firestore
@@ -48,6 +51,7 @@ class UserModel {
       'documentId': documentId,
       'role': role,
       'createdAt': createdAt,
+      'profileImageUrl': profileImageUrl,
     };
   }
 }
