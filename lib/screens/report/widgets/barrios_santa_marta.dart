@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'barrios_santa_marta.dart';
+// barrios list and search field are defined in this file
 
 
 const List<String> barriosSantaMarta = [
@@ -329,21 +329,27 @@ class _BarrioSearchFieldState extends State<BarrioSearchField> {
 
   void updateSearch(String query) {
     setState(() {
-      filtered = barriosSantaMarta
-          .where((b) => b.toLowerCase().contains(query.toLowerCase()))
-          .toList();
-      showList = query.isNotEmpty;
+      final q = query.trim().toLowerCase();
+      if (q.isEmpty) {
+        filtered = barriosSantaMarta;
+        showList = false;
+      } else if (q.length == 1) {
+        // single-character search: match only prefixes (startsWith)
+        filtered = barriosSantaMarta.where((b) => b.toLowerCase().startsWith(q)).toList();
+        showList = true;
+      } else {
+        // longer queries: allow contains
+        filtered = barriosSantaMarta.where((b) => b.toLowerCase().contains(q)).toList();
+        showList = true;
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // compute dynamic height for the results list (item height ~56)
-    final double maxListHeight = 240.0;
+    // show only one row to avoid layout overflow; item height ~56
     const double itemHeight = 56.0;
-    double listHeight = (filtered.length * itemHeight);
-    if (listHeight < itemHeight) listHeight = itemHeight;
-    if (listHeight > maxListHeight) listHeight = maxListHeight;
+    final double listHeight = itemHeight;
 
     return Column(
       children: [
@@ -351,7 +357,6 @@ class _BarrioSearchFieldState extends State<BarrioSearchField> {
           controller: widget.controller,
           onChanged: updateSearch,
           decoration: InputDecoration(
-            labelText: "Barrio",
             hintText: "Escribe el barrio...",
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -379,19 +384,25 @@ class _BarrioSearchFieldState extends State<BarrioSearchField> {
             child: SizedBox(
               height: listHeight,
               child: ListView.builder(
-                padding: EdgeInsets.zero,
-                itemCount: filtered.length,
-                itemBuilder: (context, index) {
-                  final barrio = filtered[index];
-                  return ListTile(
-                    title: Text(barrio),
-                    onTap: () {
-                      widget.controller.text = barrio;
-                      setState(() => showList = false);
-                    },
-                  );
-                },
-              ),
+                  padding: EdgeInsets.zero,
+                  // always show only one visible row to prevent spacing issues
+                  itemCount: filtered.isEmpty ? 1 : 1,
+                  itemBuilder: (context, index) {
+                    if (filtered.isEmpty) {
+                      return const ListTile(title: Text('Sin resultados'));
+                    }
+                    final barrio = filtered.first;
+                    return ListTile(
+                      title: Text(barrio),
+                      onTap: () {
+                        widget.controller.text = barrio;
+                        setState(() => showList = false);
+                        // dismiss keyboard and collapse list
+                        FocusScope.of(context).unfocus();
+                      },
+                    );
+                  },
+                ),
             ),
           ),
       ],

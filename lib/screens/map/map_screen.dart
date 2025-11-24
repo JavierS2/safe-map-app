@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
@@ -8,12 +9,14 @@ import 'package:geolocator/geolocator.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/safe_bottom_nav_bar.dart';
 import '../../config/routes.dart';
-import 'models/report.dart';
+import '../../models/report_model.dart';
+import '../../providers/report_provider.dart';
 import 'widgets/report_marker.dart';
 import 'widgets/map_controls.dart';
 import 'widgets/filter_button.dart';
 import 'widgets/map_filter_sheet.dart';
 import 'widgets/report_bottom_sheet.dart';
+import '../report/widgets/barrios_santa_marta.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({Key? key}) : super(key: key);
@@ -31,39 +34,11 @@ class _MapScreenState extends State<MapScreen> {
 
   StreamSubscription<Position?>? _positionSub;
 
-  // Example reports
-  final List<Report> _reports = [
-    Report(
-      id: 'r1',
-      barrio: 'Centro',
-      category: 'Hurto simple',
-      timestamp: DateTime.now().subtract(const Duration(minutes: 10)),
-      position: LatLng(11.2410, -74.2017),
-      title: 'Reporte',
-      description: 'Un ciudadano reportó un hurto simple cerca de la plaza central. Se escucharon gritos y la víctima perdió su teléfono.',
-    ),
-    Report(
-      id: 'r2',
-      barrio: 'Bello Horizonte',
-      category: 'Robo violento',
-      timestamp: DateTime.now().subtract(const Duration(hours: 2, minutes: 5)),
-      position: LatLng(11.14696, -74.22651),
-      title: 'Reporte',
-      description: 'Robo con agresión reportado en la vía principal. Testigos indican que fue en la madrugada.',
-    ),
-    Report(
-      id: 'r3',
-      barrio: 'El Rodadero',
-      category: 'Hurto simple',
-      timestamp: DateTime.now().subtract(const Duration(days: 1, hours: 3)),
-      position: LatLng(11.203873, -74.227876),
-      title: 'Reporte',
-      description: 'Objeto perdido en la playa y reporte de hurto en zona turística cerca del malecón.',
-    ),
-  ];
+  // Reports loaded from Firestore via provider
+  List<ReportModel> _reports = [];
 
   // Active filtered list (starts showing all)
-  late List<Report> _filteredReports = List.from(_reports);
+  late List<ReportModel> _filteredReports = [];
 
   // Current filter criteria
   DateTime? _filterDateFrom;
@@ -73,13 +48,29 @@ class _MapScreenState extends State<MapScreen> {
   Set<String> _filterBarrios = {};
   Set<String> _filterCategories = {};
 
+
   @override
   void dispose() {
     _positionSub?.cancel();
     super.dispose();
   }
 
-  void _showReport(Report r) {
+  @override
+  void initState() {
+    super.initState();
+    // Load reports from provider once the widget is mounted
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final provider = Provider.of<ReportProvider>(context, listen: false);
+      await provider.fetchAllReports();
+      if (!mounted) return;
+      setState(() {
+        _reports = List.from(provider.allReports);
+        _filteredReports = List.from(_reports);
+      });
+    });
+  }
+
+  void _showReport(ReportModel r) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -96,23 +87,48 @@ class _MapScreenState extends State<MapScreen> {
         // date filter
         if (_filterDateFrom != null) {
           final fromDate = DateTime(_filterDateFrom!.year, _filterDateFrom!.month, _filterDateFrom!.day);
-          if (r.timestamp.isBefore(fromDate)) return false;
+          if (r.date.isBefore(fromDate)) return false;
         }
         if (_filterDateTo != null) {
           final toDate = DateTime(_filterDateTo!.year, _filterDateTo!.month, _filterDateTo!.day, 23, 59, 59);
-          if (r.timestamp.isAfter(toDate)) return false;
+          if (r.date.isAfter(toDate)) return false;
         }
 
-        // time of day filter: compare only when both bounds provided
-        if (_filterTimeFrom != null && _filterTimeTo != null) {
-          final rTime = TimeOfDay.fromDateTime(r.timestamp);
-          bool beforeFrom = (rTime.hour < _filterTimeFrom!.hour) || (rTime.hour == _filterTimeFrom!.hour && rTime.minute < _filterTimeFrom!.minute);
-          bool afterTo = (rTime.hour > _filterTimeTo!.hour) || (rTime.hour == _filterTimeTo!.hour && rTime.minute > _filterTimeTo!.minute);
-          if (beforeFrom || afterTo) return false;
+        // time of day filter: allow start-only, end-only or both
+        if (_filterTimeFrom != null || _filterTimeTo != null) {
+          // parse report.time string like '5:12 PM' or '17:12'
+          int? parseTimeToMinutes(String s) {
+            final reg = RegExp(r'^(\d{1,2}):(\d{2})(?:\s*([AaPp][Mm]))?');
+            final m = reg.firstMatch(s.trim());
+            if (m == null) return null;
+            final h = int.tryParse(m.group(1) ?? '0');
+            final min = int.tryParse(m.group(2) ?? '0');
+            final ampm = m.group(3);
+            if (h == null || min == null) return null;
+            var hour = h;
+            if (ampm != null) {
+              final a = ampm.toLowerCase();
+              if (a == 'pm' && hour < 12) hour += 12;
+              if (a == 'am' && hour == 12) hour = 0;
+            }
+            return hour * 60 + min;
+          }
+
+          final minutesOfDay = parseTimeToMinutes(r.time);
+          if (minutesOfDay == null) return false;
+
+          if (_filterTimeFrom != null) {
+            final startMinutes = _filterTimeFrom!.hour * 60 + _filterTimeFrom!.minute;
+            if (minutesOfDay < startMinutes) return false;
+          }
+          if (_filterTimeTo != null) {
+            final endMinutes = _filterTimeTo!.hour * 60 + _filterTimeTo!.minute;
+            if (minutesOfDay > endMinutes) return false;
+          }
         }
 
         // barrio filter
-        if (_filterBarrios.isNotEmpty && !_filterBarrios.contains(r.barrio)) return false;
+        if (_filterBarrios.isNotEmpty && !_filterBarrios.contains(r.neighborhood)) return false;
 
         // category filter
         if (_filterCategories.isNotEmpty && !_filterCategories.contains(r.category)) return false;
@@ -123,8 +139,10 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _openFilterSheet() async {
-    final availableBarrios = _reports.map((r) => r.barrio).toSet().toList();
-    final availableCategories = _reports.map((r) => r.category).toSet().toList();
+    // Use the canonical barrios list from the report creation widget
+    final availableBarrios = List<String>.from(barriosSantaMarta);
+    // Fixed categories per product requirement
+    final availableCategories = ['Hurto Simple', 'Robo Violento', 'Otro'];
 
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
@@ -236,8 +254,9 @@ class _MapScreenState extends State<MapScreen> {
                                 ),
                                 MarkerLayer(
                                   markers: _filteredReports
+                                      .where((r) => r.lat != null && r.lng != null)
                                       .map((r) => Marker(
-                                            point: r.position,
+                                            point: LatLng(r.lat!, r.lng!),
                                             width: 56,
                                             // increase height to accommodate the small pin tip below the circle
                                             height: 72,
