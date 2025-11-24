@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../models/report.dart';
+import '../../../models/report_model.dart';
 import '../../../theme/app_colors.dart';
 
 class ReportDetailsSheet extends StatelessWidget {
-  final Report report;
+  final ReportModel report;
 
   const ReportDetailsSheet({Key? key, required this.report}) : super(key: key);
 
@@ -63,7 +63,7 @@ class ReportDetailsSheet extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(report.title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                        Text(report.category, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                         const SizedBox(height: 6),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -78,7 +78,7 @@ class ReportDetailsSheet extends StatelessWidget {
                             const SizedBox(height: 6),
                             // Brief description shown under the title area (compact)
                             Builder(builder: (_) {
-                              final desc = (report.description ?? '').trim();
+                              final desc = report.details.trim();
                               final brief = desc.isNotEmpty
                                   ? (desc.length > 120 ? '${desc.substring(0, 120).trim()}…' : desc)
                                   : 'Sin descripción disponible.';
@@ -99,17 +99,17 @@ class ReportDetailsSheet extends StatelessWidget {
 
               const SizedBox(height: 14),
 
-              _row(Icons.location_on, report.barrio),
+              _row(Icons.location_on, report.neighborhood),
               const SizedBox(height: 8),
-              _row(Icons.pin_drop, 'Lat: ${report.position.latitude.toStringAsFixed(5)}, Lng: ${report.position.longitude.toStringAsFixed(5)}'),
+              _row(Icons.pin_drop, 'Lat: ${report.lat?.toStringAsFixed(5) ?? '-'}, Lng: ${report.lng?.toStringAsFixed(5) ?? '-'}'),
               const SizedBox(height: 8),
-              _row(Icons.calendar_today, _formatDateTime(report.timestamp)),
+              _row(Icons.calendar_today, _formatDateTime(report.createdAt)),
 
-              if ((report.description?.isNotEmpty ?? false)) ...[
+              if (report.details.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 const Text('Descripción', style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 6),
-                Text(report.description ?? '', style: const TextStyle(fontSize: 14)),
+                Text(report.details, style: const TextStyle(fontSize: 14)),
               ],
 
               const SizedBox(height: 14),
