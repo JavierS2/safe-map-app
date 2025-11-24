@@ -11,6 +11,7 @@ class ReportProvider with ChangeNotifier {
   String? errorMessage;
   int todayCount = 0;
   List<ReportModel> latestReports = [];
+  List<ReportModel> allReports = [];
 
   Future<bool> sendReport({
     required DateTime date,
@@ -73,6 +74,17 @@ class ReportProvider with ChangeNotifier {
       notifyListeners();
     } catch (e) {
       // ignore
+    }
+  }
+
+  /// Fetch all reports from Firestore and store locally
+  Future<void> fetchAllReports() async {
+    try {
+      final list = await _service.getAllReports();
+      allReports = list;
+      notifyListeners();
+    } catch (e) {
+      // ignore for now
     }
   }
 }

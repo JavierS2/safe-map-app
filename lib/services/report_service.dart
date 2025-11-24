@@ -32,6 +32,12 @@ class ReportService {
     return snap.docs.map((d) => ReportModel.fromMap(d.id, d.data())).toList();
   }
 
+  /// Get all reports ordered by createdAt descending
+  Future<List<ReportModel>> getAllReports() async {
+    final snap = await _db.collection('reports').orderBy('createdAt', descending: true).get();
+    return snap.docs.map((d) => ReportModel.fromMap(d.id, d.data())).toList();
+  }
+
   String generateId() {
     return _db.collection("reports").doc().id;
   }

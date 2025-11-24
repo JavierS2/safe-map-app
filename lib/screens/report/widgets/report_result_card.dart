@@ -1,21 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../../theme/app_colors.dart';
+import '../../../models/report_model.dart';
 
 class ReportResultCard extends StatelessWidget {
-  final String title;
-  final String neighborhood;
-  final String dateTime;
-  final String description;
+  final ReportModel report;
   final VoidCallback? onTap;
 
-  const ReportResultCard({
-    super.key,
-    required this.title,
-    required this.neighborhood,
-    required this.dateTime,
-    required this.description,
-    this.onTap,
-  });
+  const ReportResultCard({super.key, required this.report, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +22,7 @@ class ReportResultCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // left image / marker
+            // left image / marker or evidence thumbnail
             Container(
               width: 56,
               height: 56,
@@ -39,7 +30,18 @@ class ReportResultCard extends StatelessWidget {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.location_on_outlined, color: AppColors.primaryDark, size: 30),
+              child: report.evidences != null && report.evidences!.isNotEmpty
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        report.evidences!.first,
+                        width: 56,
+                        height: 56,
+                        fit: BoxFit.cover,
+                        errorBuilder: (ctx, e, st) => const Icon(Icons.broken_image, color: AppColors.primaryDark),
+                      ),
+                    )
+                  : const Icon(Icons.location_on_outlined, color: AppColors.primaryDark, size: 30),
             ),
             const SizedBox(width: 12),
             // main info
@@ -51,7 +53,7 @@ class ReportResultCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          title,
+                          report.category,
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 color: AppColors.textPrimary,
                                 fontWeight: FontWeight.bold,
@@ -68,7 +70,7 @@ class ReportResultCard extends StatelessWidget {
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          neighborhood,
+                          report.neighborhood,
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: AppColors.textPrimary,
                                 fontWeight: FontWeight.w600,
@@ -84,7 +86,7 @@ class ReportResultCard extends StatelessWidget {
                       const Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.textSecondary),
                       const SizedBox(width: 6),
                       Text(
-                        dateTime,
+                        '${report.date.day.toString().padLeft(2, '0')}/${report.date.month.toString().padLeft(2, '0')}/${report.date.year} - ${report.time}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: AppColors.textSecondary,
                             ),
@@ -93,7 +95,7 @@ class ReportResultCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    description,
+                    report.details,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppColors.textPrimary,
                         ),
