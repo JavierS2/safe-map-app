@@ -62,6 +62,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
           _emailController.text = user.email;
           _neighborhoodController.text = user.neighborhood;
           _pickedImage = null;
+          _pushNotifications = user.pushEnabled ?? true;
         });
       }
     });
@@ -186,6 +187,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                                                   ),
                                                   const SizedBox(height: 18),
                                                   SaveButton(
+                                                    isLoading: _isSaving,
                                                     onPressed: () async {
                                                       if (_isSaving) return;
                                                       if (!(_formKey.currentState?.validate() ?? false)) {
@@ -211,6 +213,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                                                             // picked bytes length available if needed for diagnostics
                                                             if (bytes.length > 1024 * 1024) {
                                                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('La imagen excede el tamaño máximo de 1 MB')));
+                                                              setState(() => _isSaving = false);
                                                               return;
                                                             }
                                                             // Upload from web directly to Cloudinary via browser POST (no extra packages)
@@ -221,6 +224,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                                                             // file size checked above
                                                             if (size > 1024 * 1024) {
                                                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('La imagen excede el tamaño máximo de 1 MB')));
+                                                              setState(() => _isSaving = false);
                                                               return;
                                                             }
                                                             // Upload native files to Cloudinary (existing account uses Cloudinary)
@@ -237,6 +241,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                                                         neighborhood: _neighborhoodController.text.trim(),
                                                         email: _emailController.text.trim(),
                                                         profileImageUrl: uploadedUrl,
+                                                        pushEnabled: _pushNotifications,
                                                       );
                                                       
 

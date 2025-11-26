@@ -11,15 +11,19 @@ class NotificationService {
   }
 
   /// Find users that live in the same neighborhood (excluding the report author)
-  Future<List<String>> _findUserIdsByNeighborhood(String neighborhood, {String? excludeUid}) async {
+  /// Find users that live in the same neighborhood (excluding the report author)
+  /// Returns a list of maps with `uid` and `pushEnabled` so callers can decide
+  /// whether to attempt a device push for each user.
+  Future<List<Map<String, dynamic>>> _findUsersByNeighborhood(String neighborhood, {String? excludeUid}) async {
     final snap = await _db.collection('users').where('neighborhood', isEqualTo: neighborhood).get();
-    final uids = <String>[];
+    final users = <Map<String, dynamic>>[];
     for (final d in snap.docs) {
       final uid = d.id;
       if (excludeUid != null && uid == excludeUid) continue;
-      uids.add(uid);
+      final data = d.data();
+      users.add({'uid': uid, 'pushEnabled': data['pushEnabled'] as bool? ?? true});
     }
-    return uids;
+    return users;
   }
 
   /// Notify relevant users when a new report is created.
@@ -42,9 +46,11 @@ class NotificationService {
 
     // 2) Notify users in same neighborhood (exclude author)
     try {
-      final uids = await _findUserIdsByNeighborhood(report.neighborhood, excludeUid: report.userId);
+      final users = await _findUsersByNeighborhood(report.neighborhood, excludeUid: report.userId);
       final batch = _db.batch();
-      for (final uid in uids) {
+      for (final u in users) {
+        final uid = u['uid'] as String;
+        final pushEnabled = u['pushEnabled'] as bool;
         final ref = _db.collection('users').doc(uid).collection('notifications').doc();
         batch.set(ref, {
           'title': 'Nuevo reporte en tu barrio',
@@ -52,9 +58,11 @@ class NotificationService {
           'reportId': report.id,
           'createdAt': now,
           'read': false,
+          // flag for downstream push-sender to decide whether to send FCM
+          'shouldPush': pushEnabled,
         });
       }
-      if (uids.isNotEmpty) await batch.commit();
+      if (users.isNotEmpty) await batch.commit();
     } catch (e) {
       // ignore notification errors to not block report creation
     }

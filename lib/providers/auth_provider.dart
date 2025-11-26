@@ -8,6 +8,7 @@ class AuthProvider extends ChangeNotifier {
   final FirestoreService _firestoreService = FirestoreService();
 
   bool isLoading = false;
+  bool isUpdatingProfile = false;
   String? errorMessage;
   UserModel? currentUserData;
 
@@ -51,6 +52,7 @@ class AuthProvider extends ChangeNotifier {
         documentId: documentId,
         role: "ciudadano",
         createdAt: DateTime.now(),
+        pushEnabled: true,
       );
 
       
@@ -150,12 +152,12 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Update current user's profile fields in Firestore and locally.
-  Future<bool> updateProfile({required String fullName, required String phone, required String neighborhood, String? email, String? profileImageUrl}) async {
+  Future<bool> updateProfile({required String fullName, required String phone, required String neighborhood, String? email, String? profileImageUrl, bool? pushEnabled}) async {
     try {
       final firebaseUser = _authService.currentUser;
       if (firebaseUser == null || currentUserData == null) return false;
 
-      isLoading = true;
+      isUpdatingProfile = true;
       notifyListeners();
 
       final uid = firebaseUser.uid;
@@ -173,6 +175,9 @@ class AuthProvider extends ChangeNotifier {
       if (profileImageUrl != null && profileImageUrl.trim().isNotEmpty) {
         data['profileImageUrl'] = profileImageUrl.trim();
       }
+      if (pushEnabled != null) {
+        data['pushEnabled'] = pushEnabled;
+      }
 
       await _firestoreService.updateUser(uid, data);
 
@@ -188,18 +193,19 @@ class AuthProvider extends ChangeNotifier {
         documentId: currentUserData!.documentId,
         role: currentUserData!.role,
         createdAt: currentUserData!.createdAt,
+        pushEnabled: pushEnabled ?? currentUserData!.pushEnabled,
       );
 
-      isLoading = false;
+      isUpdatingProfile = false;
       notifyListeners();
       return true;
     } catch (e) {
-      isLoading = false;
+      isUpdatingProfile = false;
       errorMessage = e.toString();
       notifyListeners();
       return false;
     }
-    }
+  }
 
   // ===========================
   // LOGOUT
