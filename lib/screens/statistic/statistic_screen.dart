@@ -121,12 +121,22 @@ class _StatisticScreenState extends State<StatisticScreen> {
                                 // Donut centered with legend rows beneath
                                 Column(
                                   children: [
+                                    // chart color palette (extended for more buckets)
+                                    const SizedBox.shrink(),
                                     Center(
                                       child: Consumer<ReportProvider>(builder: (context, provider, _) {
                                         final values = provider.monthlyDonutValues.isNotEmpty ? provider.monthlyDonutValues : [0.0, 0.0, 0.0];
+                                        final chartColors = const [
+                                          Color(0xFF6C5CE7), // purple
+                                          Color(0xFFFF6B9A), // pink
+                                          Color(0xFF00B2FF), // cyan
+                                          Color(0xFFFFA726), // orange
+                                          Color(0xFF66BB6A), // green
+                                          Color(0xFFFFEB3B), // yellow
+                                        ];
                                         return DonutChart(
                                           values: values,
-                                          colors: const [Color(0xFF6C5CE7), Color(0xFFFF6B9A), Color(0xFF00B2FF)],
+                                          colors: chartColors,
                                           size: 140,
                                         );
                                       }),
@@ -135,8 +145,16 @@ class _StatisticScreenState extends State<StatisticScreen> {
                                     Consumer<ReportProvider>(builder: (context, provider, _) {
                                       final labels = provider.monthlyDonutLabels;
                                       final percents = provider.monthlyDonutPercents;
+                                      final chartColors = const [
+                                        Color(0xFF6C5CE7),
+                                        Color(0xFFFF6B9A),
+                                        Color(0xFF00B2FF),
+                                        Color(0xFFFFA726),
+                                        Color(0xFF66BB6A),
+                                        Color(0xFFFFEB3B),
+                                      ];
                                       final items = List<Widget>.generate(labels.length, (i) {
-                                        final color = i == 0 ? const Color(0xFF6C5CE7) : (i == 1 ? const Color(0xFFFF6B9A) : const Color(0xFF00B2FF));
+                                        final color = chartColors[i % chartColors.length];
                                         return LegendItem(color, labels[i], percents[i]);
                                       });
 

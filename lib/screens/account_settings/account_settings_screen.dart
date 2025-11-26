@@ -155,14 +155,16 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                                                   CustomFormField(controller: _email_controller_fallback(), hint: 'example@example.com', keyboardType: TextInputType.emailAddress, validator: (v) { if (v == null || v.trim().isEmpty) return 'El email es requerido'; final emailRegex = RegExp(r"^[^@\s]+@[^@\s]+\.[^@\s]+$"); if (!emailRegex.hasMatch(v)) return 'Email inválido'; return null; }),
                                                   const SizedBox(height: 12),
                                                   FieldLabel('Barrio de residencia'),
-                                                  // keep visual style similar to other form fields but use the BarrioSearchField
-                                                  Container(
-                                                    decoration: BoxDecoration(
-                                                      color: AppColors.softBlue,
-                                                      borderRadius: BorderRadius.circular(16),
+                                                  // use the BarrioSearchField but render as a pill like Register,
+                                                  // adjusted to match account settings colors and radii
+                                                  Padding(
+                                                    padding: const EdgeInsets.symmetric(vertical: 4),
+                                                    child: BarrioSearchField(
+                                                      controller: _neighborhoodController,
+                                                      pillStyle: true,
+                                                      pillColor: AppColors.softBlue,
+                                                      pillRadius: 16,
                                                     ),
-                                                    padding: const EdgeInsets.all(8),
-                                                    child: BarrioSearchField(controller: _neighborhoodController),
                                                   ),
                                                   const SizedBox(height: 18),
                                                   Row(

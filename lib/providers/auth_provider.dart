@@ -58,6 +58,12 @@ class AuthProvider extends ChangeNotifier {
       // 3. Guardarlo en Firestore
       await _firestoreService.saveUser(user);
 
+      // 4. Enviar correo de verificación si es posible
+      try {
+        await firebaseUser.sendEmailVerification();
+      } catch (_) {
+        // no bloquear el registro si el envío falla; el frontend mostrará instrucciones
+      }
 
       isLoading = false;
       notifyListeners();
@@ -199,8 +205,14 @@ class AuthProvider extends ChangeNotifier {
   // LOGOUT
   // ===========================
   Future<void> logout() async {
-    await _authService.logout();
-    notifyListeners();
+    try {
+      isLoading = true;
+      notifyListeners();
+      await _authService.logout();
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
   }
 
 }

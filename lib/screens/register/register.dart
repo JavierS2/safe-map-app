@@ -5,10 +5,14 @@ import 'widgets/labeled_field.dart';
 import 'widgets/password_input.dart';
 import 'widgets/phone_input.dart';
 import 'widgets/text_input.dart';
+import '../report/widgets/barrios_santa_marta.dart';
 import 'widgets/validators.dart';
 
 import 'package:provider/provider.dart';
+import 'package:flutter/services.dart' as services;
 import '../../providers/auth_provider.dart';
+import '../../config/route_history.dart';
+import '../../config/routes.dart';
 
 class Register extends StatefulWidget {
   const Register({super.key});
@@ -84,13 +88,53 @@ class _RegisterScreenState extends State<Register> {
               child: IntrinsicHeight(
                 child: Column(
                   children: [
-                    const SizedBox(height: 70),
-                    const Text(
-                      "Crea Tu Cuenta",
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
+                    const SizedBox(height: 8),
+                    Container(
+                      height: 96,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      alignment: Alignment.center,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: IconButton(
+                              onPressed: () {
+                                if (Navigator.canPop(context)) {
+                                  Navigator.pop(context);
+                                  return;
+                                }
+                                final current = ModalRoute.of(context)?.settings.name;
+                                final prev = appRouteObserver.previousMeaningfulRoute(current) ??
+                                    (appRouteObserver.lastRoute != null && appRouteObserver.lastRoute != current
+                                        ? appRouteObserver.lastRoute
+                                        : null);
+                                if (prev != null && prev.isNotEmpty && prev != current) {
+                                  Navigator.pushReplacementNamed(context, prev);
+                                  return;
+                                }
+                                Navigator.pushReplacementNamed(context, AppRoutes.home);
+                              },
+                              icon: const Icon(
+                                Icons.arrow_back_ios_new_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                          const Center(
+                            child: Text(
+                              "Crea Tu Cuenta",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 26,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 40),
@@ -113,14 +157,17 @@ class _RegisterScreenState extends State<Register> {
 
                               // NOMBRE
                               LabeledField(
-                                label: "Nombre Completo",
+                                label: "Nombre completo",
                                 errorText: _showErrors
                                     ? Validators.validateName(nameCtrl.text)
                                     : null,
-                                child: TextInput(
+                                  child: TextInput(
                                   hint: "John Doe",
                                   controller: nameCtrl,
                                   validator: Validators.validateName,
+                                  inputFormatters: [
+                                    services.FilteringTextInputFormatter.allow(RegExp(r"[A-Za-zÀ-ÖØ-öø-ÿ\s]")),
+                                  ],
                                 ),
                               ),
 
@@ -155,7 +202,7 @@ class _RegisterScreenState extends State<Register> {
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: LabeledField(
-                                      label: "Fecha de Nacimiento",
+                                      label: "Fecha de nacimiento",
                                       errorText: _showErrors
                                           ? Validators.validateDate(birthCtrl.text)
                                           : null,
@@ -173,11 +220,8 @@ class _RegisterScreenState extends State<Register> {
                                 children: [
                                   Expanded(
                                     child: LabeledField(
-                                      label: "Barrio de Residencia",
-                                      child: TextInput(
-                                        controller: barrioCtrl,
-                                        hint: "Bonda",
-                                      ),
+                                      label: "Barrio de residencia",
+                                      child: BarrioSearchField(controller: barrioCtrl, pillStyle: true),
                                     ),
                                   ),
                                   const SizedBox(width: 12),
@@ -185,9 +229,14 @@ class _RegisterScreenState extends State<Register> {
                                     child: LabeledField(
                                       label: "Cédula",
                                       child: TextInput(
-                                        controller: idCtrl,
-                                        hint: "1234567890",
-                                      ),
+                                          controller: idCtrl,
+                                          hint: "1234567890",
+                                          inputFormatters: [
+                                            services.FilteringTextInputFormatter.digitsOnly,
+                                            services.LengthLimitingTextInputFormatter(10),
+                                          ],
+                                          keyboardType: TextInputType.number,
+                                        ),
                                     ),
                                   ),
                                 ],
@@ -207,7 +256,7 @@ class _RegisterScreenState extends State<Register> {
 
                               // CONFIRMAR CONTRASEÑA
                               LabeledField(
-                                label: "Confirmar Contraseña",
+                                label: "Confirmar contraseña",
                                 errorText: _showErrors
                                     ? Validators.confirmPassword(
                                         passCtrl.text, confirmCtrl.text)
@@ -235,6 +284,12 @@ class _RegisterScreenState extends State<Register> {
                                       return;
                                     }
 
+                                    // Ensure neighborhood is provided
+                                    if ((barrioCtrl.text.trim()).isEmpty) {
+                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('El barrio es requerido')));
+                                      return;
+                                    }
+
                                     bool ok = await auth.registerUser(
                                       fullName: nameCtrl.text,
                                       email: emailCtrl.text,
@@ -246,7 +301,8 @@ class _RegisterScreenState extends State<Register> {
                                     );
 
                                     if (ok) {
-                                      Navigator.pushNamed(context, "/home");
+                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Registro exitoso. Revisa tu correo para confirmar tu cuenta.')));
+                                      Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
                                     } else {
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(

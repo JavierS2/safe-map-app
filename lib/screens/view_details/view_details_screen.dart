@@ -119,9 +119,13 @@ class _ViewDetailsScreenState extends State<ViewDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // allow the body to extend beneath the bottom navigation bar
+      extendBody: true,
       backgroundColor: AppColors.background,
       bottomNavigationBar: const SafeBottomNavBar(selectedRoute: AppRoutes.viewDetails),
       body: SafeArea(
+        top: true,
+        bottom: false,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
