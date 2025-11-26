@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../models/report.dart';
+import '../../../models/report_model.dart';
 import '../../../theme/app_colors.dart';
-import 'report_details_sheet.dart';
+import '../../../config/routes.dart';
 
 class ReportBottomSheet extends StatelessWidget {
-  final Report report;
+  final ReportModel report;
 
   const ReportBottomSheet({Key? key, required this.report}) : super(key: key);
 
@@ -78,7 +78,7 @@ class ReportBottomSheet extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(report.title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                      Text(report.category, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 6),
                       Text('Un ciudadano ha realizado un reporte:', style: Theme.of(context).textTheme.bodyMedium),
                       const SizedBox(height: 4),
@@ -93,11 +93,11 @@ class ReportBottomSheet extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _infoPill(Icons.location_on, report.barrio),
+                _infoPill(Icons.location_on, report.neighborhood),
                 const SizedBox(width: 8),
-                _infoPill(Icons.calendar_today, _formatDateTime(report.timestamp)),
+                _infoPill(Icons.calendar_today, _formatDateTime(report.createdAt)),
                 const SizedBox(width: 8),
-                _infoPill(Icons.access_time, _formatTimeAgo(report.timestamp)),
+                _infoPill(Icons.access_time, _formatTimeAgo(report.createdAt)),
               ],
             ),
 
@@ -112,16 +112,9 @@ class ReportBottomSheet extends StatelessWidget {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 onPressed: () {
-                  // Close this sheet, then open the details sheet for the report.
+                  // Close this sheet, then navigate to the details screen
                   Navigator.of(context).pop();
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                    ),
-                    builder: (_) => ReportDetailsSheet(report: report),
-                  );
+                  Navigator.pushNamed(context, AppRoutes.viewDetails, arguments: {'reportId': report.id});
                 },
                 child: const Center(
                   child: Text(

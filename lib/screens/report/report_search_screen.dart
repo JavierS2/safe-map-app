@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/report_provider.dart';
 import '../../theme/app_colors.dart';
+import '../../models/report_model.dart';
 import '../../widgets/safe_bottom_nav_bar.dart';
 import '../../config/routes.dart';
 import 'widgets/report_search_bar.dart';
 import 'widgets/report_header.dart';
 import 'widgets/report_filters.dart';
 import 'widgets/report_list.dart';
+import 'widgets/category_picker_sheet.dart';
+import 'widgets/time_range_picker_sheet.dart';
+import 'widgets/date_picker_sheet.dart';
+import 'widgets/neighborhood_dialog.dart';
 
 class ReportSearchScreen extends StatefulWidget {
   const ReportSearchScreen({super.key});
@@ -17,46 +24,20 @@ class ReportSearchScreen extends StatefulWidget {
 class _ReportSearchScreenState extends State<ReportSearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _innerScrollController = ScrollController();
-  bool _reserveBottomPadding = false;
-  final GlobalKey _contentKey = GlobalKey();
-  double? _lastConstraintsMaxHeight;
-  bool _useOuterPadding = false;
 
-  final List<Map<String, String>> _allReports = [
-    {
-      'neighborhood': 'El Líbano',
-      'dateTime': '30/10/2025 - 07:20',
-      'type': 'Hurto simple',
-      'description': 'Arrebato de celular en zona turística cerca al parque.',
-    },
-    {
-      'neighborhood': 'Mamatoco',
-      'dateTime': '29/10/2025 - 20:15',
-      'type': 'Robo violento',
-      'description': 'Intento de robo con arma en la vía principal.',
-    },
-    {
-      'neighborhood': 'El Prado',
-      'dateTime': '29/10/2025 - 14:50',
-      'type': 'Hurto simple',
-      'description': 'Hurto de pertenencias en transporte público.',
-    },
-  ];
-
-  List<Map<String, String>> _filtered = [];
+  List<ReportModel> _allReports = [];
+  List<ReportModel> _filtered = [];
   String? _selectedCategory;
   String? _selectedNeighborhood;
   String? _selectedNeighborhoodFilter;
   DateTime? _selectedDate;
-  TimeOfDay? _selectedTime;
+  TimeOfDay? _selectedTimeStart;
+  TimeOfDay? _selectedTimeEnd;
   String _normalizedQuery = '';
 
   String _normalize(String? s) {
     if (s == null) return '';
-    // trim, collapse multiple spaces and lowercase for stable comparisons
     var collapsed = s.trim().replaceAll(RegExp(r"\s+"), ' ').toLowerCase();
-
-    // remove common diacritics (Spanish/Latin) so searches ignore accents
     const Map<String, String> _diacriticsMap = {
       'á': 'a', 'à': 'a', 'ä': 'a', 'â': 'a', 'ã': 'a', 'å': 'a', 'ā': 'a',
       'é': 'e', 'è': 'e', 'ë': 'e', 'ê': 'e', 'ē': 'e', 'ė': 'e',
@@ -66,22 +47,23 @@ class _ReportSearchScreenState extends State<ReportSearchScreen> {
       'ñ': 'n', 'ç': 'c', 'ý': 'y', 'ÿ': 'y',
       'œ': 'oe', 'æ': 'ae'
     };
-
-    _diacriticsMap.forEach((k, v) {
-      collapsed = collapsed.replaceAll(k, v);
-    });
-
-    // remove punctuation and other non-alphanumeric chars to make contains() checks reliable
+    _diacriticsMap.forEach((k, v) { collapsed = collapsed.replaceAll(k, v); });
     collapsed = collapsed.replaceAll(RegExp(r'[^a-z0-9\s]'), '');
-
     return collapsed;
   }
 
   @override
   void initState() {
     super.initState();
-    _filtered = List.from(_allReports);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _updateReservePadding());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final provider = Provider.of<ReportProvider>(context, listen: false);
+      await provider.fetchAllReports();
+      if (!mounted) return;
+      setState(() {
+        _allReports = List.from(provider.allReports);
+        _filtered = List.from(_allReports);
+      });
+    });
   }
 
   void _onSearchChanged(String q) {
@@ -92,109 +74,73 @@ class _ReportSearchScreenState extends State<ReportSearchScreen> {
   void _applyFilters() {
     final query = _normalizedQuery.isNotEmpty ? _normalizedQuery : _normalize(_searchController.text);
 
+    int? parseTimeToMinutes(String s) {
+      final reg = RegExp(r'^(\d{1,2}):(\d{2})(?:\s*([AaPp][Mm]))?');
+      final m = reg.firstMatch(s.trim());
+      if (m == null) return null;
+      final h = int.tryParse(m.group(1) ?? '0');
+      final min = int.tryParse(m.group(2) ?? '0');
+      final ampm = m.group(3);
+      if (h == null || min == null) return null;
+      var hour = h;
+      if (ampm != null) {
+        final a = ampm.toLowerCase();
+        if (a == 'pm' && hour < 12) hour += 12;
+        if (a == 'am' && hour == 12) hour = 0;
+      }
+      return hour * 60 + min;
+    }
+
     setState(() {
       _filtered = _allReports.where((r) {
-        // search query across fields
+        final title = _normalize(r.category);
+        final neighborhood = _normalize(r.neighborhood);
+        final dateTimeStr = '${r.date.day.toString().padLeft(2, '0')}/${r.date.month.toString().padLeft(2, '0')}/${r.date.year} - ${r.time}';
+        final dateTime = _normalize(dateTimeStr);
+        final description = _normalize(r.details);
+
         if (query.isNotEmpty) {
-          // explicitly check the important fields so description is always included
-          final title = _normalize(r['type']);
-          final neighborhood = _normalize(r['neighborhood']);
-          final dateTime = _normalize(r['dateTime']);
-          final description = _normalize(r['description']);
-
-          final matchesQuery = title.contains(query) ||
-              neighborhood.contains(query) ||
-              dateTime.contains(query) ||
-              description.contains(query);
-
+          final matchesQuery = title.contains(query) || neighborhood.contains(query) || dateTime.contains(query) || description.contains(query);
           if (!matchesQuery) return false;
         }
 
         if (_selectedCategory != null && _selectedCategory!.isNotEmpty) {
-          if ((r['type'] ?? '') != _selectedCategory) return false;
+          if (r.category != _selectedCategory) return false;
         }
 
         if (_selectedNeighborhoodFilter != null && _selectedNeighborhoodFilter!.isNotEmpty) {
-          final neigh = _normalize(r['neighborhood']);
+          final neigh = _normalize(r.neighborhood);
           if (!neigh.contains(_selectedNeighborhoodFilter!)) return false;
         }
 
         if (_selectedDate != null) {
-          final parts = (r['dateTime'] ?? '').split(' - ');
-          if (parts.isEmpty) return false;
-          final dateStr = parts[0]; // dd/MM/yyyy
           final expected = '${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}';
-          if (dateStr != expected) return false;
+          if (dateTimeStr.split(' - ').first != expected) return false;
         }
 
-        if (_selectedTime != null) {
-          final parts = (r['dateTime'] ?? '').split(' - ');
+        if (_selectedTimeStart != null || _selectedTimeEnd != null) {
+          final parts = dateTimeStr.split(' - ');
           if (parts.length < 2) return false;
-          final timeStr = parts[1]; // HH:mm
-          final expected = '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}';
-          if (timeStr != expected) return false;
+          final minutesOfDay = parseTimeToMinutes(parts[1]);
+          if (minutesOfDay == null) return false;
+          if (_selectedTimeStart != null) {
+            final startMinutes = _selectedTimeStart!.hour * 60 + _selectedTimeStart!.minute;
+            if (minutesOfDay < startMinutes) return false;
+          }
+          if (_selectedTimeEnd != null) {
+            final endMinutes = _selectedTimeEnd!.hour * 60 + _selectedTimeEnd!.minute;
+            if (minutesOfDay > endMinutes) return false;
+          }
         }
 
         return true;
       }).toList();
     });
-    WidgetsBinding.instance.addPostFrameCallback((_) => _updateReservePadding());
-  }
-
-  void _updateReservePadding() {
-    if (!mounted) return;
-    if (!_innerScrollController.hasClients) {
-      setState(() {
-        _reserveBottomPadding = false;
-      });
-      return;
-    }
-
-    final needs = _innerScrollController.position.maxScrollExtent > 0;
-    if (needs != _reserveBottomPadding) {
-      setState(() {
-        _reserveBottomPadding = needs;
-      });
-    }
-    // also trigger content measurement to decide outer padding
-    WidgetsBinding.instance.addPostFrameCallback((_) => _measureContent());
-  }
-
-  void _measureContent() {
-    if (!mounted) return;
-    final ctx = _contentKey.currentContext;
-    if (ctx == null || _lastConstraintsMaxHeight == null) return;
-    final box = ctx.findRenderObject() as RenderBox?;
-    if (box == null) return;
-    final contentHeight = box.size.height;
-    final needsOuter = contentHeight > _lastConstraintsMaxHeight!;
-    if (needsOuter != _useOuterPadding) {
-      setState(() {
-        _useOuterPadding = needsOuter;
-      });
-    }
   }
 
   Future<void> _showCategoryPicker() async {
-    final categories = _allReports.map((e) => e['type'] ?? '').toSet().toList();
-    final picked = await showModalBottomSheet<String?>(
-      context: context,
-      builder: (ctx) {
-        return ListView(
-          children: [
-            ListTile(
-              title: const Text('Clear'),
-              onTap: () => Navigator.of(ctx).pop(''),
-            ),
-            ...categories.map((c) => ListTile(
-                  title: Text(c),
-                  onTap: () => Navigator.of(ctx).pop(c),
-                )),
-          ],
-        );
-      },
-    );
-
+    final categories = ['Hurto Simple', 'Robo Violento', 'Otro'];
+    final picked = await showModalBottomSheet<String?>(context: context, builder: (_) => CategoryPickerSheet(categories: categories));
     if (picked != null) {
       _selectedCategory = picked.isEmpty ? null : picked;
       _applyFilters();
@@ -202,24 +148,7 @@ class _ReportSearchScreenState extends State<ReportSearchScreen> {
   }
 
   Future<void> _showNeighborhoodDialog() async {
-    final controller = TextEditingController(text: _selectedNeighborhood);
-    final picked = await showDialog<String?>(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: const Text('Buscar barrio'),
-          content: TextField(
-            controller: controller,
-            decoration: const InputDecoration(hintText: 'Escribe el barrio'),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.of(ctx).pop(null), child: const Text('Cancel')),
-            TextButton(onPressed: () => Navigator.of(ctx).pop(controller.text.trim()), child: const Text('Apply')),
-          ],
-        );
-      },
-    );
-
+    final picked = await showDialog<String?>(context: context, builder: (_) => NeighborhoodDialog(initial: _selectedNeighborhood));
     if (picked != null) {
       if (picked.isEmpty) {
         _selectedNeighborhood = null;
@@ -233,29 +162,33 @@ class _ReportSearchScreenState extends State<ReportSearchScreen> {
   }
 
   Future<void> _pickDate() async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate ?? now,
-      firstDate: DateTime(now.year - 5),
-      lastDate: DateTime(now.year + 5),
-    );
-    if (picked != null) {
-      _selectedDate = picked;
+    final result = await showModalBottomSheet<Map<String, dynamic>?>(context: context, builder: (_) => DatePickerSheet(initialDate: _selectedDate));
+    if (result == null) return; // canceled
+    if (result['clear'] == true) {
+      _selectedDate = null;
       _applyFilters();
+      return;
     }
+    _selectedDate = result['date'] as DateTime?;
+    _applyFilters();
+  }
+
+  Future<void> _showTimeRangePicker() async {
+    final result = await showModalBottomSheet<Map<String, dynamic>?>(context: context, builder: (_) => TimeRangePickerSheet(start: _selectedTimeStart, end: _selectedTimeEnd));
+    if (result == null) return; // canceled
+    if (result['clear'] == true) {
+      _selectedTimeStart = null;
+      _selectedTimeEnd = null;
+      _applyFilters();
+      return;
+    }
+    _selectedTimeStart = result['start'] as TimeOfDay?;
+    _selectedTimeEnd = result['end'] as TimeOfDay?;
+    _applyFilters();
   }
 
   Future<void> _pickTime() async {
-    final now = TimeOfDay.now();
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: _selectedTime ?? now,
-    );
-    if (picked != null) {
-      _selectedTime = picked;
-      _applyFilters();
-    }
+    await _showTimeRangePicker();
   }
 
   @override
@@ -318,9 +251,13 @@ class _ReportSearchScreenState extends State<ReportSearchScreen> {
                                     dateLabel: _selectedDate != null
                                         ? '${_selectedDate!.day.toString().padLeft(2, '0')}/${_selectedDate!.month.toString().padLeft(2, '0')}/${_selectedDate!.year}'
                                         : 'Fecha',
-                                    timeLabel: _selectedTime != null
-                                        ? '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}'
-                                        : 'Hora',
+                                    timeLabel: (_selectedTimeStart == null && _selectedTimeEnd == null)
+                                        ? 'Hora'
+                                        : (_selectedTimeStart != null && _selectedTimeEnd != null)
+                                            ? '${_selectedTimeStart!.format(context)} - ${_selectedTimeEnd!.format(context)}'
+                                            : (_selectedTimeStart != null)
+                                                ? 'Desde ${_selectedTimeStart!.format(context)}'
+                                                : 'Hasta ${_selectedTimeEnd!.format(context)}',
                                     onCategoryTap: _showCategoryPicker,
                                     onNeighborhoodTap: _showNeighborhoodDialog,
                                     onDateTap: _pickDate,
@@ -340,7 +277,9 @@ class _ReportSearchScreenState extends State<ReportSearchScreen> {
                                     ReportList(
                                       reports: _filtered,
                                       onTap: (r) {
-                                        // place for navigation to detail or further action
+                                        final provider = Provider.of<ReportProvider>(context, listen: false);
+                                        provider.viewReport(r);
+                                        Navigator.pushNamed(context, AppRoutes.viewDetails, arguments: {'reportId': r.id});
                                       },
                                     ),
 

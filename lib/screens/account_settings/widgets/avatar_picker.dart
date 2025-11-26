@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -9,8 +11,9 @@ import '../../../theme/app_colors.dart';
 class AvatarPicker extends StatefulWidget {
   final double size;
   final ValueChanged<XFile?>? onImageChanged;
+  final String? imageUrl;
 
-  const AvatarPicker({Key? key, required this.size, this.onImageChanged}) : super(key: key);
+  const AvatarPicker({Key? key, required this.size, this.onImageChanged, this.imageUrl}) : super(key: key);
 
   @override
   State<AvatarPicker> createState() => _AvatarPickerState();
@@ -18,6 +21,7 @@ class AvatarPicker extends StatefulWidget {
 
 class _AvatarPickerState extends State<AvatarPicker> {
   XFile? _picked;
+  Uint8List? _pickedBytes;
 
   Future<void> _showImageSourceActionSheet() async {
     final pickedSource = await showModalBottomSheet<ImageSource>(
@@ -57,7 +61,14 @@ class _AvatarPickerState extends State<AvatarPicker> {
       final XFile? file = await picker.pickImage(source: source, maxWidth: 1200, imageQuality: 85);
       if (!mounted) return;
       if (file != null) {
-        setState(() => _picked = file);
+        Uint8List? bytes;
+        if (kIsWeb) {
+          bytes = await file.readAsBytes();
+        }
+        setState(() {
+          _picked = file;
+          _pickedBytes = bytes;
+        });
         widget.onImageChanged?.call(file);
       }
     } catch (e) {
@@ -85,8 +96,12 @@ class _AvatarPickerState extends State<AvatarPicker> {
                 border: Border.all(color: Colors.white, width: 4),
                 boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3))],
                 image: _picked != null
-                    ? DecorationImage(fit: BoxFit.cover, image: FileImage(File(_picked!.path)))
-                    : const DecorationImage(fit: BoxFit.cover, image: AssetImage('assets/images/avatar.png')),
+                  ? (kIsWeb
+                    ? DecorationImage(fit: BoxFit.cover, image: MemoryImage(_pickedBytes!))
+                    : DecorationImage(fit: BoxFit.cover, image: FileImage(File(_picked!.path))))
+                  : (widget.imageUrl != null
+                    ? DecorationImage(fit: BoxFit.cover, image: NetworkImage(widget.imageUrl!))
+                    : const DecorationImage(fit: BoxFit.cover, image: AssetImage('assets/images/avatar.png'))),
               ),
             ),
 

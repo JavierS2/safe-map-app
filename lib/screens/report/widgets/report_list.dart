@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import '../../../models/report_model.dart';
 import 'report_result_card.dart';
 
 class ReportList extends StatelessWidget {
-  final List<Map<String, String>> reports;
-  final void Function(Map<String, String>)? onTap;
+  final List<ReportModel> reports;
+  final void Function(ReportModel)? onTap;
 
   const ReportList({required this.reports, this.onTap, Key? key}) : super(key: key);
 
@@ -14,10 +15,7 @@ class ReportList extends StatelessWidget {
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: ReportResultCard(
-            title: r['type'] ?? '',
-            neighborhood: r['neighborhood'] ?? '',
-            dateTime: r['dateTime'] ?? '',
-            description: r['description'] ?? 'Arrebato de celular en zona turística.',
+            report: r,
             onTap: () => onTap?.call(r),
           ),
         );

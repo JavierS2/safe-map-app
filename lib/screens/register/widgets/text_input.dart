@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class TextInput extends StatelessWidget {
   final String hint;
   final TextEditingController controller;
   final String? Function(String?)? validator;
+  final List<TextInputFormatter>? inputFormatters;
+  final TextInputType? keyboardType;
 
   const TextInput({
     super.key,
     required this.hint,
     required this.controller,
     this.validator,
+    this.inputFormatters,
+    this.keyboardType,
   });
 
   @override
@@ -23,6 +28,8 @@ class TextInput extends StatelessWidget {
       child: TextFormField(
         controller: controller,
         validator: validator,
+        inputFormatters: inputFormatters,
+        keyboardType: keyboardType,
         decoration: InputDecoration(
           border: InputBorder.none,
           hintText: hint,

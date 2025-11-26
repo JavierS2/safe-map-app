@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../theme/app_colors.dart';
+import '../../report/widgets/barrios_santa_marta.dart';
 
 class MapFilterSheet extends StatefulWidget {
   final DateTime? initialDateFrom;
@@ -34,6 +35,7 @@ class _MapFilterSheetState extends State<MapFilterSheet> {
   TimeOfDay? _timeTo;
   late Set<String> _selectedBarrios;
   late Set<String> _selectedCategories;
+  late TextEditingController _barrioController;
 
   @override
   void initState() {
@@ -44,6 +46,13 @@ class _MapFilterSheetState extends State<MapFilterSheet> {
     _timeTo = widget.initialTimeTo;
     _selectedBarrios = Set.from(widget.initialSelectedBarrios);
     _selectedCategories = Set.from(widget.initialSelectedCategories);
+    _barrioController = TextEditingController(text: _selectedBarrios.isNotEmpty ? _selectedBarrios.first : '');
+  }
+
+  @override
+  void dispose() {
+    _barrioController.dispose();
+    super.dispose();
   }
 
   Future<void> _pickDateFrom() async {
@@ -101,12 +110,14 @@ class _MapFilterSheetState extends State<MapFilterSheet> {
   }
 
   void _apply() {
+    final barrios = <String>[];
+    if (_barrioController.text.trim().isNotEmpty) barrios.add(_barrioController.text.trim());
     Navigator.of(context).pop({
       'dateFrom': _dateFrom,
       'dateTo': _dateTo,
       'timeFrom': _timeFrom,
       'timeTo': _timeTo,
-      'barrios': _selectedBarrios.toList(),
+      'barrios': barrios,
       'categories': _selectedCategories.toList(),
     });
   }
@@ -118,6 +129,7 @@ class _MapFilterSheetState extends State<MapFilterSheet> {
       _timeFrom = null;
       _timeTo = null;
       _selectedBarrios.clear();
+      _barrioController.clear();
       _selectedCategories.clear();
     });
   }
@@ -208,9 +220,10 @@ class _MapFilterSheetState extends State<MapFilterSheet> {
               ]),
 
               const SizedBox(height: 12),
-              Text('Barrios', style: Theme.of(context).textTheme.bodyMedium),
+              Text('Barrio', style: Theme.of(context).textTheme.bodyMedium),
               const SizedBox(height: 8),
-              _buildChips(widget.barrios, _selectedBarrios, (s, v) => v ? _selectedBarrios.add(s) : _selectedBarrios.remove(s)),
+              // Use the reusable BarrioSearchField to show a searchable dropdown-like list
+              BarrioSearchField(controller: _barrioController),
 
               const SizedBox(height: 12),
               Text('Tipo', style: Theme.of(context).textTheme.bodyMedium),

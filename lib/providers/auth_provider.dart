@@ -8,6 +8,7 @@ class AuthProvider extends ChangeNotifier {
   final FirestoreService _firestoreService = FirestoreService();
 
   bool isLoading = false;
+  bool isUpdatingProfile = false;
   String? errorMessage;
   UserModel? currentUserData;
 
@@ -51,6 +52,7 @@ class AuthProvider extends ChangeNotifier {
         documentId: documentId,
         role: "ciudadano",
         createdAt: DateTime.now(),
+        pushEnabled: true,
       );
 
       
@@ -58,16 +60,12 @@ class AuthProvider extends ChangeNotifier {
       // 3. Guardarlo en Firestore
       await _firestoreService.saveUser(user);
 
-      print(">>> INICIANDO REGISTRO");
-      print("Datos recibidos:");
-      print("Nombre: $fullName");
-      print("Email: $email");
-      print("Password: $password");
-      print("Teléfono: $phone");
-      print("Barrio: $neighborhood");
-      print("Cédula: $documentId");
-      print("Fecha nacimiento: $birthDate");
-
+      // 4. Enviar correo de verificación si es posible
+      try {
+        await firebaseUser.sendEmailVerification();
+      } catch (_) {
+        // no bloquear el registro si el envío falla; el frontend mostrará instrucciones
+      }
 
       isLoading = false;
       notifyListeners();
@@ -124,13 +122,111 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
     return false;
   }
-}
+
+  }
+
+  /// Fetch current user document from Firestore and populate `currentUserData`.
+  Future<void> fetchCurrentUserData() async {
+    try {
+      isLoading = true;
+      notifyListeners();
+      final firebaseUser = _authService.currentUser;
+      if (firebaseUser == null) {
+        isLoading = false;
+        notifyListeners();
+        return;
+      }
+      final data = await _firestoreService.getUser(firebaseUser.uid);
+      if (data == null) {
+        isLoading = false;
+        notifyListeners();
+        return;
+      }
+      currentUserData = UserModel.fromMap(data);
+      isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Update current user's profile fields in Firestore and locally.
+  Future<bool> updateProfile({required String fullName, required String phone, required String neighborhood, String? email, String? profileImageUrl, bool? pushEnabled}) async {
+    try {
+      final firebaseUser = _authService.currentUser;
+      if (firebaseUser == null || currentUserData == null) return false;
+
+      isUpdatingProfile = true;
+      notifyListeners();
+
+      final uid = firebaseUser.uid;
+
+      final Map<String, dynamic> data = {
+        'fullName': fullName,
+        'phone': phone,
+        'neighborhood': neighborhood,
+      };
+
+      // If email needs update in Firestore profile (not Auth), include it
+      if (email != null && email.trim().isNotEmpty) {
+        data['email'] = email.trim();
+      }
+      if (profileImageUrl != null && profileImageUrl.trim().isNotEmpty) {
+        data['profileImageUrl'] = profileImageUrl.trim();
+      }
+      if (pushEnabled != null) {
+        data['pushEnabled'] = pushEnabled;
+      }
+
+      await _firestoreService.updateUser(uid, data);
+
+      // update local model preserving other fields
+      currentUserData = UserModel(
+        uid: currentUserData!.uid,
+        fullName: fullName,
+        email: email ?? currentUserData!.email,
+        profileImageUrl: profileImageUrl ?? currentUserData!.profileImageUrl,
+        phone: phone,
+        birthDate: currentUserData!.birthDate,
+        neighborhood: neighborhood,
+        documentId: currentUserData!.documentId,
+        role: currentUserData!.role,
+        createdAt: currentUserData!.createdAt,
+        pushEnabled: pushEnabled ?? currentUserData!.pushEnabled,
+      );
+
+      isUpdatingProfile = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      isUpdatingProfile = false;
+      errorMessage = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
 
   // ===========================
   // LOGOUT
   // ===========================
+  /// Logout but ensure the `isLoading` spinner is visible for a minimum
+  /// duration so the UI has time to show the loading indicator.
   Future<void> logout() async {
-    await _authService.logout();
-    notifyListeners();
+    const minVisible = Duration(milliseconds: 600);
+    final start = DateTime.now();
+    try {
+      isLoading = true;
+      notifyListeners();
+      await _authService.logout();
+      final elapsed = DateTime.now().difference(start);
+      if (elapsed < minVisible) {
+        await Future.delayed(minVisible - elapsed);
+      }
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
   }
+
 }

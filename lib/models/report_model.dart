@@ -12,6 +12,8 @@ class ReportModel {
   final double? lng;             // Longitud
   final String status;           // pendiente, validado, en proceso, cerrado
   final DateTime createdAt;      // Registro del momento en que se creó
+  final String? authorName;      // Nombre completo del autor al momento de crear
+  final List<String>? evidences; // URLs de evidencias (Cloudinary)
 
   ReportModel({
     required this.id,
@@ -25,6 +27,8 @@ class ReportModel {
     this.lng,
     this.status = "pendiente",
     required this.createdAt,
+    this.authorName,
+    this.evidences,
   });
 
   // Convertir Firestore → ReportModel
@@ -41,6 +45,8 @@ class ReportModel {
       lng: data['lng']?.toDouble(),
       status: data['status'],
       createdAt: (data['createdAt'] as Timestamp).toDate(),
+      authorName: data['authorName'] as String?,
+      evidences: (data['evidences'] as List<dynamic>?)?.map((e) => e.toString()).toList(),
     );
   }
 
@@ -57,6 +63,8 @@ class ReportModel {
       'lng': lng,
       'status': status,
       'createdAt': createdAt,
+      'authorName': authorName,
+      'evidences': evidences ?? [],
     };
   }
 }

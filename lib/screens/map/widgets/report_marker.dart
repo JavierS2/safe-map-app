@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../models/report.dart';
+import '../../../models/report_model.dart';
 import '../../../theme/app_colors.dart';
 
 class ReportMarker extends StatelessWidget {
-  final Report report;
+  final ReportModel report;
   final VoidCallback onTap;
 
   const ReportMarker({Key? key, required this.report, required this.onTap}) : super(key: key);

@@ -33,6 +33,13 @@ class DonutPainter extends CustomPainter {
     final radius = size.width / 2;
     final paint = Paint()..style = PaintingStyle.stroke..strokeWidth = 22.0;
 
+    // draw a full base arc (light grey) so the donut ring is always complete
+    final basePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 22.0
+      ..color = Colors.grey.shade200;
+    canvas.drawArc(Rect.fromCircle(center: center, radius: radius - 11), -pi / 2, 2 * pi, false, basePaint);
+
     double start = -pi / 2;
     for (int i = 0; i < values.length; i++) {
       final sweep = values[i] * 2 * pi;

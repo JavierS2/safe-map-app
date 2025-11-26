@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'barrios_santa_marta.dart';
+// barrios list and search field are defined in this file
 
 
 const List<String> barriosSantaMarta = [
   "1º de Mayo",
   "Acacias",
   "Boulevard de la 19",
-  "Calle 29 hasta la Cra. 5ª",
   "Cañaveral",
   "Ciudadela 29 de Julio",
   "Corea",
@@ -31,13 +30,13 @@ const List<String> barriosSantaMarta = [
   "Privilegio",
   "San José Del S",
   "San Pablo",
-  "Urbanización Villas de Alejandría",
+  "Villas de Alejandría",
   "Veinte de Enero",
   "Villa del Carmen",
   "Villa del Mar",
   "Villa Marbella",
   "20 de Octubre",
-  "Av. Libertador - P. Mamatoco",
+  "Av. Libertador",
   "Bolivariana",
   "Conjunto Residencial Canarias",
   "Cantilito I",
@@ -64,10 +63,10 @@ const List<String> barriosSantaMarta = [
   "Timayui II",
   "Timayui III",
   "Tres Puentes",
-  "Urbanización Alejandrina",
-  "Urbanización Boulevard del Rio",
-  "Urbanización Garagoa",
-  "Urbanización Villa del Mar",
+  "Urb. Alejandrina",
+  "Boulevard del Rio",
+  "Garagoa",
+  "Villa del Mar",
   "Villa Campo",
   "Villa Dania",
   "Villa Ely",
@@ -89,7 +88,7 @@ const List<String> barriosSantaMarta = [
   "La Concepción III",
   "La Concepción IV",
   "La Concepción V",
-  "La Lucha - 19 de Abril",
+  "La Lucha",
   "Líbano 2000",
   "Los Nogales",
   "Los Pinos",
@@ -310,8 +309,11 @@ const List<String> barriosSantaMarta = [
 
 class BarrioSearchField extends StatefulWidget {
   final TextEditingController controller;
+  final bool pillStyle; // when true, render the rounded pill style like register's inputs
+  final Color? pillColor;
+  final double? pillRadius;
 
-  const BarrioSearchField({super.key, required this.controller});
+  const BarrioSearchField({super.key, required this.controller, this.pillStyle = false, this.pillColor, this.pillRadius});
 
   @override
   State<BarrioSearchField> createState() => _BarrioSearchFieldState();
@@ -329,34 +331,68 @@ class _BarrioSearchFieldState extends State<BarrioSearchField> {
 
   void updateSearch(String query) {
     setState(() {
-      filtered = barriosSantaMarta
-          .where((b) => b.toLowerCase().contains(query.toLowerCase()))
-          .toList();
-      showList = query.isNotEmpty;
+      final q = query.trim().toLowerCase();
+      if (q.isEmpty) {
+        filtered = barriosSantaMarta;
+        showList = false;
+      } else if (q.length == 1) {
+        // single-character search: match only prefixes (startsWith)
+        filtered = barriosSantaMarta.where((b) => b.toLowerCase().startsWith(q)).toList();
+        showList = true;
+      } else {
+        // longer queries: allow contains
+        filtered = barriosSantaMarta.where((b) => b.toLowerCase().contains(q)).toList();
+        showList = true;
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    // show only one row to avoid layout overflow; item height ~56
+    const double itemHeight = 56.0;
+    final double listHeight = itemHeight;
+
     return Column(
       children: [
-        TextField(
-          controller: widget.controller,
-          onChanged: updateSearch,
-          decoration: InputDecoration(
-            labelText: "Barrio",
-            hintText: "Escribe el barrio...",
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+        // Support two visual modes: pillStyle (rounded blue pill) used by Register,
+        // and default outlined field used elsewhere.
+        if (widget.pillStyle)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            decoration: BoxDecoration(
+              color: widget.pillColor ?? const Color(0xFFA9EEFF),
+              borderRadius: BorderRadius.circular(widget.pillRadius ?? 30),
             ),
-            prefixIcon: const Icon(Icons.search),
+            child: TextField(
+              controller: widget.controller,
+              onChanged: updateSearch,
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                hintText: "Escribe el barrio...",
+                hintStyle: TextStyle(fontFamily: 'Poppins'),
+                isDense: true,
+                contentPadding: EdgeInsets.symmetric(vertical: 14),
+                prefixIcon: Icon(Icons.search),
+              ),
+            ),
+          )
+        else
+          TextField(
+            controller: widget.controller,
+            onChanged: updateSearch,
+            decoration: InputDecoration(
+              hintText: "Escribe el barrio...",
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              prefixIcon: const Icon(Icons.search),
+            ),
           ),
-        ),
 
-        // Lista desplegable de resultados
+        // Lista desplegable de resultados (height adjusts to content, up to max)
         if (showList)
           Container(
-            height: 200,
             margin: const EdgeInsets.only(top: 5),
             decoration: BoxDecoration(
               color: Colors.white,
@@ -370,18 +406,28 @@ class _BarrioSearchFieldState extends State<BarrioSearchField> {
                 ),
               ],
             ),
-            child: ListView.builder(
-              itemCount: filtered.length,
-              itemBuilder: (context, index) {
-                final barrio = filtered[index];
-                return ListTile(
-                  title: Text(barrio),
-                  onTap: () {
-                    widget.controller.text = barrio;
-                    setState(() => showList = false);
+            child: SizedBox(
+              height: listHeight,
+              child: ListView.builder(
+                  padding: EdgeInsets.zero,
+                  // always show only one visible row to prevent spacing issues
+                  itemCount: filtered.isEmpty ? 1 : 1,
+                  itemBuilder: (context, index) {
+                    if (filtered.isEmpty) {
+                      return const ListTile(title: Text('Sin resultados'));
+                    }
+                    final barrio = filtered.first;
+                    return ListTile(
+                      title: Text(barrio),
+                      onTap: () {
+                        widget.controller.text = barrio;
+                        setState(() => showList = false);
+                        // dismiss keyboard and collapse list
+                        FocusScope.of(context).unfocus();
+                      },
+                    );
                   },
-                );
-              },
+                ),
             ),
           ),
       ],

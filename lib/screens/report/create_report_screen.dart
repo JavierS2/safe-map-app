@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-
 import '../../theme/app_colors.dart';
 import '../../widgets/safe_bottom_nav_bar.dart';
 import '../../providers/report_provider.dart';
@@ -12,7 +11,7 @@ import 'widgets/report_text_field.dart';
 import 'widgets/report_dropdown_field.dart';
 import 'widgets/evidence_upload_box.dart';
 import 'widgets/barrios_santa_marta.dart';
-import 'package:geolocator/geolocator.dart';
+import 'location_picker_screen.dart';
 
 class CreateReportScreen extends StatefulWidget {
   const CreateReportScreen({super.key});
@@ -28,12 +27,15 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
       TextEditingController();
   final TextEditingController _detailsController = TextEditingController();
 
-  String _selectedCategory = 'Hurto';
-  final List<String> _categories = ['Hurto', 'Robo', 'Acoso', 'Otro'];
+  String _selectedCategory = 'Hurto simple';
+  final List<String> _categories = ['Hurto simple', 'Robo violento', 'Otro'];
 
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
   GeoPoint? _selectedLocation; // ubicación escogida
+
+  // 🔹 NUEVO: lista de evidencias (URLs Cloudinary)
+  List<String> _evidenceUrls = [];
 
   @override
   void initState() {
@@ -45,17 +47,15 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
 
     _selectedTime = TimeOfDay.now();
   }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    // Ahora sí podemos usar context aquí
     if (_timeController.text.isEmpty) {
       _timeController.text = _selectedTime!.format(context);
     }
   }
-
-
 
   @override
   void dispose() {
@@ -98,88 +98,63 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   }
 
   Future<void> _setCurrentLocation() async {
-  bool serviceEnabled;
-  LocationPermission permission;
-
-  // Verificar si el GPS está activado
-  serviceEnabled = await Geolocator.isLocationServiceEnabled();
-  if (!serviceEnabled) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Por favor activa la ubicación del dispositivo.")),
+    // Open a map picker that centers on device location and allows the user
+    // to adjust the marker. Returns a GeoPoint when the user confirms.
+    final result = await Navigator.of(context).push<GeoPoint>(
+      MaterialPageRoute(builder: (_) => const LocationPickerScreen()),
     );
-    return;
-  }
-
-  // Verificar permisos
-  permission = await Geolocator.checkPermission();
-  if (permission == LocationPermission.denied) {
-    permission = await Geolocator.requestPermission();
-    if (permission == LocationPermission.denied) {
+    if (result != null) {
+      setState(() {
+        _selectedLocation = result;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Permiso de ubicación denegado.")),
+        const SnackBar(content: Text("Ubicación seleccionada.")),
       );
-      return;
     }
   }
 
-  if (permission == LocationPermission.deniedForever) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Permiso denegado permanentemente. Actívalo desde ajustes."),
-      ),
-    );
-    return;
-  }
-
-  // Obtener ubicación REAL del dispositivo
-  final position = await Geolocator.getCurrentPosition(
-    desiredAccuracy: LocationAccuracy.high,
-  );
-
-  setState(() {
-    _selectedLocation = GeoPoint(position.latitude, position.longitude);
-  });
-
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text("Ubicación obtenida correctamente.")),
-  );
-}
-
-
   void _submitReport() async {
-  final provider = Provider.of<ReportProvider>(context, listen: false);
+    final provider = Provider.of<ReportProvider>(context, listen: false);
+    if (_selectedLocation == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Primero envía tu ubicación.")),
+      );
+      return;
+    }
 
-  if (_selectedLocation == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Primero envía tu ubicación.")),
+    // Validate barrio is provided
+    if ((_neighborhoodController.text.trim()).isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("El barrio es obligatorio.")),
+      );
+      return;
+    }
+
+    // Aquí asumimos que tu ReportProvider tiene un parámetro `evidences`
+    final success = await provider.sendReport(
+      date: _selectedDate!,
+      time: _selectedTime!.format(context),
+      category: _selectedCategory,
+      neighborhood: _neighborhoodController.text.trim(),
+      details: _detailsController.text.trim(),
+      lat: _selectedLocation!.latitude,
+      lng: _selectedLocation!.longitude,
+      evidences: _evidenceUrls, // 🔹 NUEVO
     );
-    return;
-  }
 
-  final success = await provider.sendReport(
-    date: _selectedDate!,
-    time: _selectedTime!.format(context),
-    category: _selectedCategory,
-    neighborhood: _neighborhoodController.text.trim(),
-    details: _detailsController.text.trim(),
-    lat: _selectedLocation!.latitude,
-    lng: _selectedLocation!.longitude,
-  );
+    if (!success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(provider.errorMessage ?? "Error inesperado")),
+      );
+      return;
+    }
 
-  if (!success) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(provider.errorMessage ?? "Error inesperado")),
+      const SnackBar(content: Text("Reporte enviado correctamente")),
     );
-    return;
+
+    Navigator.pop(context);
   }
-
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text("Reporte enviado correctamente")),
-  );
-
-  Navigator.pop(context);
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -255,10 +230,10 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                         Row(
                           children: [
                             Expanded(
-                                flex: 3,
-                                child: BarrioSearchField(
-                                  controller: _neighborhoodController,
-                                ),
+                              flex: 3,
+                              child: BarrioSearchField(
+                                controller: _neighborhoodController,
+                              ),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
@@ -315,8 +290,14 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Evidencias
-                        const EvidenceUploadBox(),
+                        // Evidencias (Cloudinary)
+                        EvidenceUploadBox(
+                          onEvidenceChanged: (urls) {
+                            setState(() {
+                              _evidenceUrls = urls;
+                            });
+                          },
+                        ),
                         const SizedBox(height: 24),
 
                         // Botón Reportar
