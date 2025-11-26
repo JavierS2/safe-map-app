@@ -210,11 +210,19 @@ class AuthProvider extends ChangeNotifier {
   // ===========================
   // LOGOUT
   // ===========================
+  /// Logout but ensure the `isLoading` spinner is visible for a minimum
+  /// duration so the UI has time to show the loading indicator.
   Future<void> logout() async {
+    const minVisible = Duration(milliseconds: 600);
+    final start = DateTime.now();
     try {
       isLoading = true;
       notifyListeners();
       await _authService.logout();
+      final elapsed = DateTime.now().difference(start);
+      if (elapsed < minVisible) {
+        await Future.delayed(minVisible - elapsed);
+      }
     } finally {
       isLoading = false;
       notifyListeners();
