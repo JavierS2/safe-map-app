@@ -98,58 +98,64 @@ class _LoginScreenState extends State<LoginScreen> {
 
                             const SizedBox(height: 30),
 
-                            // BOTÓN INICIAR SESIÓN
+                            // BOTÓN INICIAR SESIÓN (muestra carga cuando auth.isLoading)
                             SizedBox(
                               width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: () async {
-                                  final auth = Provider.of<AuthProvider>(
-                                    context,
-                                    listen: false,
-                                  );
+                              child: Consumer<AuthProvider>(builder: (context, auth, _) {
+                                return ElevatedButton(
+                                  onPressed: auth.isLoading
+                                      ? null
+                                      : () async {
+                                          final success = await auth.login(
+                                            emailCtrl.text.trim(),
+                                            passwordCtrl.text.trim(),
+                                          );
 
-                                  final success = await auth.login(
-                                    emailCtrl.text.trim(),
-                                    passwordCtrl.text.trim(),
-                                  );
+                                          if (!success) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  auth.errorMessage ?? "Error al iniciar sesión",
+                                                ),
+                                              ),
+                                            );
+                                            return;
+                                          }
 
-                                  if (!success) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          auth.errorMessage ??
-                                              "Error al iniciar sesión",
+                                          // Redirige SIEMPRE a home
+                                          Navigator.pushNamedAndRemoveUntil(
+                                            context,
+                                            AppRoutes.home,
+                                            (_) => false,
+                                          );
+                                        },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF00CCFF),
+                                    padding: const EdgeInsets.symmetric(vertical: 15),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(30),
+                                    ),
+                                  ),
+                                  child: auth.isLoading
+                                      ? const SizedBox(
+                                          height: 20,
+                                          width: 20,
+                                          child: CircularProgressIndicator(
+                                            color: Colors.white,
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : const Text(
+                                          "Iniciar Sesión",
+                                          style: TextStyle(
+                                            fontFamily: 'Poppins',
+                                            fontSize: 18,
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
-                                      ),
-                                    );
-                                    return;
-                                  }
-
-                                  // Redirige SIEMPRE a home
-                                  Navigator.pushNamedAndRemoveUntil(
-                                    context,
-                                    AppRoutes.home,
-                                    (_) => false,
-                                  );
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF00CCFF),
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 15),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(30),
-                                  ),
-                                ),
-                                child: const Text(
-                                  "Iniciar Sesión",
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontSize: 18,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
+                                );
+                              }),
                             ),
 
                             const SizedBox(height: 18),

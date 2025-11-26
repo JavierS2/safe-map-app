@@ -17,9 +17,10 @@ class SplashContent extends StatelessWidget {
         Text(
           'SafeMap',
           style: TextStyle(
-            fontSize: 32,
+            fontSize: 48,
             fontWeight: FontWeight.bold,
             color: Colors.white,
+            letterSpacing: 1.2,
           ),
         ),
         SizedBox(height: 48),

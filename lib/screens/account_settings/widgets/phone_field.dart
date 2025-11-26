@@ -17,14 +17,18 @@ class PhoneField extends StatelessWidget {
         return TextFormField(
           controller: controller,
           keyboardType: TextInputType.phone,
+          style: const TextStyle(fontFamily: 'Poppins', fontSize: 16, color: AppColors.textPrimary),
+          textAlignVertical: TextAlignVertical.center,
           autovalidateMode: AutovalidateMode.onUserInteraction,
           onChanged: (v) => state.didChange(v),
           decoration: InputDecoration(
             hintText: hint,
+            hintStyle: const TextStyle(fontFamily: 'Poppins', fontSize: 16, color: Colors.black45),
             prefixText: '+57 ',
-            prefixStyle: const TextStyle(color: Colors.black87, fontFamily: 'Poppins'),
+            prefixStyle: const TextStyle(color: AppColors.textPrimary, fontFamily: 'Poppins', fontSize: 16),
             filled: true,
             fillColor: AppColors.softBlue,
+            isDense: true,
             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
             suffixIcon: state.errorText != null

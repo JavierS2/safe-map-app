@@ -310,8 +310,11 @@ const List<String> barriosSantaMarta = [
 
 class BarrioSearchField extends StatefulWidget {
   final TextEditingController controller;
+  final bool pillStyle; // when true, render the rounded pill style like register's inputs
+  final Color? pillColor;
+  final double? pillRadius;
 
-  const BarrioSearchField({super.key, required this.controller});
+  const BarrioSearchField({super.key, required this.controller, this.pillStyle = false, this.pillColor, this.pillRadius});
 
   @override
   State<BarrioSearchField> createState() => _BarrioSearchFieldState();
@@ -353,17 +356,40 @@ class _BarrioSearchFieldState extends State<BarrioSearchField> {
 
     return Column(
       children: [
-        TextField(
-          controller: widget.controller,
-          onChanged: updateSearch,
-          decoration: InputDecoration(
-            hintText: "Escribe el barrio...",
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+        // Support two visual modes: pillStyle (rounded blue pill) used by Register,
+        // and default outlined field used elsewhere.
+        if (widget.pillStyle)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            decoration: BoxDecoration(
+              color: widget.pillColor ?? const Color(0xFFA9EEFF),
+              borderRadius: BorderRadius.circular(widget.pillRadius ?? 30),
             ),
-            prefixIcon: const Icon(Icons.search),
+            child: TextField(
+              controller: widget.controller,
+              onChanged: updateSearch,
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                hintText: "Escribe el barrio...",
+                hintStyle: TextStyle(fontFamily: 'Poppins'),
+                isDense: true,
+                contentPadding: EdgeInsets.symmetric(vertical: 14),
+                prefixIcon: Icon(Icons.search),
+              ),
+            ),
+          )
+        else
+          TextField(
+            controller: widget.controller,
+            onChanged: updateSearch,
+            decoration: InputDecoration(
+              hintText: "Escribe el barrio...",
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              prefixIcon: const Icon(Icons.search),
+            ),
           ),
-        ),
 
         // Lista desplegable de resultados (height adjusts to content, up to max)
         if (showList)

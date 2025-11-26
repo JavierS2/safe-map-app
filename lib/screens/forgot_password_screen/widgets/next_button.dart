@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 
 class NextButton extends StatelessWidget {
-  const NextButton({super.key});
+  final VoidCallback? onPressed;
+
+  const NextButton({super.key, this.onPressed});
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: () {
-          Navigator.pushNamed(context, '/new-password');
-        },
+        onPressed: onPressed ?? () => Navigator.pushNamed(context, '/new-password'),
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF00CCFF),
           padding: const EdgeInsets.symmetric(vertical: 15),

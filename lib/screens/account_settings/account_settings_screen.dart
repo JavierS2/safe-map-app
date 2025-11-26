@@ -62,6 +62,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
           _emailController.text = user.email;
           _neighborhoodController.text = user.neighborhood;
           _pickedImage = null;
+          _pushNotifications = user.pushEnabled ?? true;
         });
       }
     });
@@ -155,14 +156,16 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                                                   CustomFormField(controller: _email_controller_fallback(), hint: 'example@example.com', keyboardType: TextInputType.emailAddress, validator: (v) { if (v == null || v.trim().isEmpty) return 'El email es requerido'; final emailRegex = RegExp(r"^[^@\s]+@[^@\s]+\.[^@\s]+$"); if (!emailRegex.hasMatch(v)) return 'Email inválido'; return null; }),
                                                   const SizedBox(height: 12),
                                                   FieldLabel('Barrio de residencia'),
-                                                  // keep visual style similar to other form fields but use the BarrioSearchField
-                                                  Container(
-                                                    decoration: BoxDecoration(
-                                                      color: AppColors.softBlue,
-                                                      borderRadius: BorderRadius.circular(16),
+                                                  // use the BarrioSearchField but render as a pill like Register,
+                                                  // adjusted to match account settings colors and radii
+                                                  Padding(
+                                                    padding: const EdgeInsets.symmetric(vertical: 4),
+                                                    child: BarrioSearchField(
+                                                      controller: _neighborhoodController,
+                                                      pillStyle: true,
+                                                      pillColor: AppColors.softBlue,
+                                                      pillRadius: 16,
                                                     ),
-                                                    padding: const EdgeInsets.all(8),
-                                                    child: BarrioSearchField(controller: _neighborhoodController),
                                                   ),
                                                   const SizedBox(height: 18),
                                                   Row(
@@ -184,6 +187,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                                                   ),
                                                   const SizedBox(height: 18),
                                                   SaveButton(
+                                                    isLoading: _isSaving,
                                                     onPressed: () async {
                                                       if (_isSaving) return;
                                                       if (!(_formKey.currentState?.validate() ?? false)) {
@@ -209,6 +213,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                                                             // picked bytes length available if needed for diagnostics
                                                             if (bytes.length > 1024 * 1024) {
                                                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('La imagen excede el tamaño máximo de 1 MB')));
+                                                              setState(() => _isSaving = false);
                                                               return;
                                                             }
                                                             // Upload from web directly to Cloudinary via browser POST (no extra packages)
@@ -219,6 +224,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                                                             // file size checked above
                                                             if (size > 1024 * 1024) {
                                                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('La imagen excede el tamaño máximo de 1 MB')));
+                                                              setState(() => _isSaving = false);
                                                               return;
                                                             }
                                                             // Upload native files to Cloudinary (existing account uses Cloudinary)
@@ -235,6 +241,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                                                         neighborhood: _neighborhoodController.text.trim(),
                                                         email: _emailController.text.trim(),
                                                         profileImageUrl: uploadedUrl,
+                                                        pushEnabled: _pushNotifications,
                                                       );
                                                       
 

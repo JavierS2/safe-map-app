@@ -159,21 +159,53 @@ class ReportProvider with ChangeNotifier {
       final totalBucket = bucketCounts.values.fold<int>(0, (p, e) => p + e);
       final sortedBuckets = bucketCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
 
-      // prepare top 3 donut values and labels
+      // prepare donut values and labels for ALL buckets (not only top-3)
       final List<double> donutVals = [];
       final List<String> donutLabels = [];
       final List<String> donutPercs = [];
-      final int topN = sortedBuckets.length < 3 ? sortedBuckets.length : 3;
-      for (var i = 0; i < topN; i++) {
+
+      // collect fractions and labels for every bucket in sorted order
+      final List<double> fractions = [];
+      for (var i = 0; i < sortedBuckets.length; i++) {
         final b = sortedBuckets[i];
         final cnt = b.value;
         final fraction = totalBucket > 0 ? (cnt / totalBucket) : 0.0;
+        fractions.add(fraction);
         donutVals.add(fraction);
         final startHour = b.key * 4;
         final endHour = b.key * 4 + 3;
         final label = '${startHour.toString().padLeft(2, '0')}:00 - ${endHour.toString().padLeft(2, '0')}:59';
         donutLabels.add(label);
-        donutPercs.add('${(fraction * 100).round()}%');
+      }
+
+      // compute integer percentages that sum to 100 by distributing rounding remainder
+      if (fractions.isEmpty) {
+        for (var i = 0; i < donutVals.length; i++) {
+          donutPercs.add('0%');
+        }
+      } else {
+        final rawPercents = fractions.map((f) => f * 100.0).toList();
+        final floored = rawPercents.map((r) => r.floor()).toList();
+        int sumFloored = floored.fold<int>(0, (p, e) => p + e);
+        int remainder = 100 - sumFloored;
+
+        // indices sorted by fractional part descending
+        final List<int> idxs = List<int>.generate(rawPercents.length, (i) => i);
+        idxs.sort((a, b) {
+          final fa = rawPercents[a] - floored[a];
+          final fb = rawPercents[b] - floored[b];
+          return fb.compareTo(fa);
+        });
+
+        // distribute +1 to the elements with largest fractional parts
+        for (var j = 0; j < remainder; j++) {
+          final ii = idxs[j % idxs.length];
+          floored[ii] = floored[ii] + 1;
+        }
+
+        for (var v in floored) {
+          donutPercs.add('${v}%');
+        }
       }
 
       monthlyTopNeighborhoods = topNeigh;
