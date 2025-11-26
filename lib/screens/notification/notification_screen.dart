@@ -38,6 +38,12 @@ class NotificationScreen extends StatelessWidget {
       }
       groups.putIfAbsent(key, () => []).add(it);
     }
+
+    // Sort notifications inside each group by time (newest first)
+    for (final entry in groups.entries) {
+      entry.value.sort((a, b) => (b['date'] as DateTime).compareTo(a['date'] as DateTime));
+    }
+
     return groups;
   }
 
@@ -191,7 +197,18 @@ class NotificationScreen extends StatelessWidget {
                 }
 
                 final grouped = groupNotifications(merged);
+                // Order section keys: Hoy, Ayer, then other dates by newest first
                 final sectionKeys = grouped.keys.toList();
+                sectionKeys.sort((a, b) {
+                  if (a == 'Hoy' && b != 'Hoy') return -1;
+                  if (b == 'Hoy' && a != 'Hoy') return 1;
+                  if (a == 'Ayer' && b != 'Ayer') return -1;
+                  if (b == 'Ayer' && a != 'Ayer') return 1;
+                  // For other keys, use the first item's date (groups are already sorted newest-first)
+                  final aDate = grouped[a]!.isNotEmpty ? grouped[a]!.first['date'] as DateTime : DateTime.fromMillisecondsSinceEpoch(0);
+                  final bDate = grouped[b]!.isNotEmpty ? grouped[b]!.first['date'] as DateTime : DateTime.fromMillisecondsSinceEpoch(0);
+                  return bDate.compareTo(aDate);
+                });
 
                 // helper to mark all as read for current user
                 Future<void> _markAllAsRead() async {
