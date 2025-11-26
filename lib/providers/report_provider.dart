@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/report_model.dart';
 import '../services/report_service.dart';
 
@@ -31,9 +33,28 @@ class ReportProvider with ChangeNotifier {
       loading = true;
       notifyListeners();
 
+      // determine current user id and the user's display name/full name if available
+      final uid = _service.currentUserId;
+      String? authorName;
+      if (uid.isNotEmpty) {
+        try {
+          final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+          if (userDoc.exists && userDoc.data() != null) {
+            final ud = userDoc.data()! as Map<String, dynamic>;
+            authorName = (ud['fullName'] ?? ud['displayName'] ?? ud['email'])?.toString();
+          }
+        } catch (_) {
+          // fallback to FirebaseAuth displayName
+          authorName = FirebaseAuth.instance.currentUser?.displayName;
+        }
+      } else {
+        authorName = FirebaseAuth.instance.currentUser?.displayName;
+      }
+
       final report = ReportModel(
         id: _service.generateId(),
-        userId: _service.currentUserId,
+        userId: uid,
+        authorName: authorName,
         date: date,
         time: time,
         category: category,

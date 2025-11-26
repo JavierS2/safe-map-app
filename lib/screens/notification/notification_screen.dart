@@ -215,13 +215,27 @@ class NotificationScreen extends StatelessWidget {
 
                 // handler when tapping a notification
                 void _onTapNotification(Map<String, dynamic> n) async {
-                  // Show detail dialog
+                  // Show detail dialog with 'Ver' button when there's a reportId
+                  final reportId = (n['reportId'] ?? '')?.toString();
                   showDialog(
                     context: context,
                     builder: (_) => AlertDialog(
                       title: Text(n['title'] ?? ''),
                       content: Text(n['body'] ?? ''),
                       actions: [
+                        if (reportId != null && reportId.isNotEmpty)
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              elevation: 0,
+                            ),
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                              Navigator.pushNamed(context, AppRoutes.viewDetails, arguments: {'reportId': reportId});
+                            },
+                            child: const Text('Ver', style: TextStyle(color: Colors.white)),
+                          ),
                         TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cerrar')),
                       ],
                     ),

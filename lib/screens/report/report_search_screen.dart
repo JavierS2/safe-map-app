@@ -277,7 +277,9 @@ class _ReportSearchScreenState extends State<ReportSearchScreen> {
                                     ReportList(
                                       reports: _filtered,
                                       onTap: (r) {
-                                        // place for navigation to detail or further action
+                                        final provider = Provider.of<ReportProvider>(context, listen: false);
+                                        provider.viewReport(r);
+                                        Navigator.pushNamed(context, AppRoutes.viewDetails, arguments: {'reportId': r.id});
                                       },
                                     ),
 
