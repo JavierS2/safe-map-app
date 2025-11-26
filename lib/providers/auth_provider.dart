@@ -100,6 +100,26 @@ class AuthProvider extends ChangeNotifier {
       return false;
     }
 
+    // Ensure email is verified. Firebase allows signing in with unverified
+    // emails by default, so we must enforce it here if the app requires
+    // verified accounts.
+    try {
+      await user.reload(); // refresh emailVerified status
+    } catch (_) {
+      // ignore reload errors
+    }
+    final refreshed = _authService.currentUser ?? user;
+    if (!refreshed.emailVerified) {
+      // Sign out the unverified user to avoid leaving an unauthenticated state
+      try {
+        await _authService.logout();
+      } catch (_) {}
+      errorMessage = "Por favor confirma tu correo antes de iniciar sesión.";
+      isLoading = false;
+      notifyListeners();
+      return false;
+    }
+
     // 2. Obtener datos Firestore (Map)
     final data = await _firestoreService.getUser(user.uid);
     if (data == null) {
@@ -123,6 +143,45 @@ class AuthProvider extends ChangeNotifier {
     return false;
   }
 
+  }
+
+  /// Attempt to resend the verification email by signing in, sending the
+  /// verification, and signing out again. Returns true on success.
+  Future<bool> resendVerificationEmail(String email, String password) async {
+    try {
+      isLoading = true;
+      errorMessage = null;
+      notifyListeners();
+
+      final user = await _authService.loginUser(email, password);
+      if (user == null) {
+        errorMessage = 'Credenciales incorrectas';
+        isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      try {
+        await user.sendEmailVerification();
+      } catch (e) {
+        // ignore send errors but report failure
+        errorMessage = 'Error enviando correo de verificación';
+        await _authService.logout();
+        isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      await _authService.logout();
+      isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      errorMessage = e.toString();
+      isLoading = false;
+      notifyListeners();
+      return false;
+    }
   }
 
   /// Fetch current user document from Firestore and populate `currentUserData`.

@@ -24,12 +24,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   LatLng? _selected;
   bool _loading = true;
 
-  // City bounding box (latitude and longitude) - adjust as needed for your city limits
-  // Current values are a conservative bounding box around Santa Marta center (11.2408, -74.1990)
-  static const double _cityLatMin = 10.95; // southernmost allowed latitude
-  static const double _cityLatMax = 11.45; // northernmost allowed latitude
-  static const double _cityLonMin = -74.40; // westernmost allowed longitude
-  static const double _cityLonMax = -74.05; // easternmost allowed longitude
+  // City polygon loaded from GeoJSON. Must be present for validation to work.
   List<LatLng> _cityPolygon = [];
 
   @override
@@ -160,13 +155,11 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   }
 
   bool _isInsideCity(LatLng p) {
-    // If we have a loaded polygon, use point-in-polygon for accuracy
-    if (_cityPolygon.isNotEmpty) {
-      return _pointInPolygon(p, _cityPolygon);
-    }
-
-    // Fallback to bounding box
-    return p.latitude >= _cityLatMin && p.latitude <= _cityLatMax && p.longitude >= _cityLonMin && p.longitude <= _cityLonMax;
+    // Require a loaded polygon. If the polygon is not available, treat the
+    // location as outside the city so selection is prevented until the
+    // GeoJSON asset is provided.
+    if (_cityPolygon.isEmpty) return false;
+    return _pointInPolygon(p, _cityPolygon);
   }
 
   // Ray-casting algorithm for point-in-polygon. Returns true if point is inside.
