@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../models/report_model.dart';
 import '../../../theme/app_colors.dart';
-import 'report_details_sheet.dart';
+import '../../../config/routes.dart';
 
 class ReportBottomSheet extends StatelessWidget {
   final ReportModel report;
@@ -112,16 +112,9 @@ class ReportBottomSheet extends StatelessWidget {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 onPressed: () {
-                  // Close this sheet, then open the details sheet for the report.
+                  // Close this sheet, then navigate to the details screen
                   Navigator.of(context).pop();
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                    ),
-                    builder: (_) => ReportDetailsSheet(report: report),
-                  );
+                  Navigator.pushNamed(context, AppRoutes.viewDetails, arguments: {'reportId': report.id});
                 },
                 child: const Center(
                   child: Text(

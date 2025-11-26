@@ -33,6 +33,7 @@ dependencies:
 
   # Cloudinary - Almacenamiento de imágenes y vídeos
   cloudinary_public: ^0.23.1
+  video_player: ^2.5.0
 
 
 dev_dependencies:

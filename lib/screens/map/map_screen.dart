@@ -25,7 +25,7 @@ class MapScreen extends StatefulWidget {
   State<MapScreen> createState() => _MapScreenState();
 }
 
-class _MapScreenState extends State<MapScreen> {
+class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   final MapController _mapController = MapController();
 
   // Centro inicial: Santa Marta
@@ -61,12 +61,41 @@ class _MapScreenState extends State<MapScreen> {
     // Load reports from provider once the widget is mounted
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final provider = Provider.of<ReportProvider>(context, listen: false);
+
+      // read route args to check for a selected report id (optional)
+      final args = ModalRoute.of(context)?.settings.arguments;
+      String? selectedReportId;
+      if (args is Map && args['reportId'] != null) {
+        selectedReportId = args['reportId'] as String;
+      } else if (args is String) {
+        selectedReportId = args;
+      }
+
       await provider.fetchAllReports();
       if (!mounted) return;
       setState(() {
         _reports = List.from(provider.allReports);
         _filteredReports = List.from(_reports);
       });
+
+      // If a reportId was provided, try to center the map and show its bottom sheet
+      if (selectedReportId != null && selectedReportId.isNotEmpty) {
+        final found = _reports.firstWhere((r) => r.id == selectedReportId, orElse: () => ReportModel(id: '', userId: '', date: DateTime.now(), time: '', category: '', neighborhood: '', details: '', createdAt: DateTime.now()));
+        if (found.id.isNotEmpty && found.lat != null && found.lng != null) {
+          final latlng = LatLng(found.lat!, found.lng!);
+          // give the map a frame to initialize, then move and open
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            try {
+              _animatedMapMove(latlng, 15.0);
+            } catch (_) {
+              try {
+                _mapController.move(latlng, 15.0);
+              } catch (_) {}
+            }
+            _showReport(found);
+          });
+        }
+      }
     });
   }
 
@@ -79,6 +108,35 @@ class _MapScreenState extends State<MapScreen> {
       ),
       builder: (_) => ReportBottomSheet(report: r),
     );
+  }
+
+  // Smoothly animate the map center and zoom to [dest] over a short duration.
+  void _animatedMapMove(LatLng destLocation, double destZoom) {
+    final latTween = Tween<double>(begin: _center.latitude, end: destLocation.latitude);
+    final lngTween = Tween<double>(begin: _center.longitude, end: destLocation.longitude);
+    final zoomTween = Tween<double>(begin: _zoom, end: destZoom);
+
+    final controller = AnimationController(duration: const Duration(milliseconds: 700), vsync: this);
+    final animation = CurvedAnimation(parent: controller, curve: Curves.easeInOut);
+
+    controller.addListener(() {
+      final lat = latTween.evaluate(animation);
+      final lng = lngTween.evaluate(animation);
+      final zoom = zoomTween.evaluate(animation);
+      try {
+        _mapController.move(LatLng(lat, lng), zoom);
+      } catch (_) {}
+    });
+
+    controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed || status == AnimationStatus.dismissed) {
+        _center = destLocation;
+        _zoom = destZoom;
+        controller.dispose();
+      }
+    });
+
+    controller.forward();
   }
 
   void _applyFilters() {

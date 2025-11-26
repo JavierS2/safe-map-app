@@ -128,7 +128,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                                         const Padding(
                                           padding: EdgeInsets.only(bottom: 12),
                                           child: Text(
-                                            'Configuración De Cuenta',
+                                            'Configuración de cuenta',
                                             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                                           ),
                                         ),
@@ -140,10 +140,10 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                                               child: Column(
                                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                                 children: [
-                                                  FieldLabel('Nombre Completo'),
+                                                  FieldLabel('Nombre completo'),
                                                   CustomFormField(controller: _nameController, hint: 'Ingresa tu nombre', validator: (v) => (v == null || v.trim().isEmpty) ? 'El nombre es requerido' : null),
                                                   const SizedBox(height: 12),
-                                                  FieldLabel('Número Telefónico'),
+                                                  FieldLabel('Número telefónico'),
                                                   PhoneField(controller: _phoneController, validator: (v) {
                                                     final value = _phoneController.text;
                                                     if (value.trim().isEmpty) return 'El teléfono es requerido';
@@ -151,10 +151,10 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                                                     return null;
                                                   }),
                                                   const SizedBox(height: 12),
-                                                  FieldLabel('Correo Electrónico'),
+                                                  FieldLabel('Correo electrónico'),
                                                   CustomFormField(controller: _email_controller_fallback(), hint: 'example@example.com', keyboardType: TextInputType.emailAddress, validator: (v) { if (v == null || v.trim().isEmpty) return 'El email es requerido'; final emailRegex = RegExp(r"^[^@\s]+@[^@\s]+\.[^@\s]+$"); if (!emailRegex.hasMatch(v)) return 'Email inválido'; return null; }),
                                                   const SizedBox(height: 12),
-                                                  FieldLabel('Barrio De Residencia'),
+                                                  FieldLabel('Barrio de residencia'),
                                                   // keep visual style similar to other form fields but use the BarrioSearchField
                                                   Container(
                                                     decoration: BoxDecoration(

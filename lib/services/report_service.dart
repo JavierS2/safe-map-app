@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/report_model.dart';
 import 'notification_service.dart';
 
@@ -62,6 +63,12 @@ class ReportService {
   }
 
   String get currentUserId {
-    return FirebaseFirestore.instance.app.options.projectId;
+    // Return the currently authenticated Firebase user's UID when available.
+    try {
+      final u = FirebaseAuth.instance.currentUser;
+      return u?.uid ?? '';
+    } catch (_) {
+      return '';
+    }
   }
 }
