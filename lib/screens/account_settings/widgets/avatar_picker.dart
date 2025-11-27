@@ -61,15 +61,31 @@ class _AvatarPickerState extends State<AvatarPicker> {
       final XFile? file = await picker.pickImage(source: source, maxWidth: 1200, imageQuality: 85);
       if (!mounted) return;
       if (file != null) {
-        Uint8List? bytes;
+        // Validate file size: maximum 1 MB
         if (kIsWeb) {
-          bytes = await file.readAsBytes();
+          final bytes = await file.readAsBytes();
+          if (bytes.length > 1024 * 1024) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('La imagen excede el tamaño máximo de 1 MB')));
+            return;
+          }
+          setState(() {
+            _picked = file;
+            _pickedBytes = bytes;
+          });
+          widget.onImageChanged?.call(file);
+        } else {
+          final f = File(file.path);
+          final len = await f.length();
+          if (len > 1024 * 1024) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('La imagen excede el tamaño máximo de 1 MB')));
+            return;
+          }
+          setState(() {
+            _picked = file;
+            _pickedBytes = null;
+          });
+          widget.onImageChanged?.call(file);
         }
-        setState(() {
-          _picked = file;
-          _pickedBytes = bytes;
-        });
-        widget.onImageChanged?.call(file);
       }
     } catch (e) {
       if (!mounted) return;

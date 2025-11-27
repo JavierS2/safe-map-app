@@ -112,13 +112,41 @@ class _LoginScreenState extends State<LoginScreen> {
                                           );
 
                                           if (!success) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(
-                                                content: Text(
-                                                  auth.errorMessage ?? "Error al iniciar sesión",
+                                            // If failure due to unverified email, show dialog with resend option
+                                            if (auth.errorMessage != null && auth.errorMessage!.contains('confirma tu correo')) {
+                                              // Show dialog offering to resend verification
+                                              showDialog<void>(
+                                                context: context,
+                                                builder: (ctx) => AlertDialog(
+                                                  title: const Text('Email no verificado'),
+                                                  content: const Text('Tu correo no ha sido verificado. ¿Deseas reenviar el correo de verificación?'),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed: () => Navigator.of(ctx).pop(),
+                                                      child: const Text('Cerrar'),
+                                                    ),
+                                                    TextButton(
+                                                      onPressed: () async {
+                                                        Navigator.of(ctx).pop();
+                                                        final ok = await auth.resendVerificationEmail(emailCtrl.text.trim(), passwordCtrl.text.trim());
+                                                        ScaffoldMessenger.of(context).showSnackBar(
+                                                          SnackBar(content: Text(ok ? 'Correo de verificación reenviado' : (auth.errorMessage ?? 'Error enviando correo'))),
+                                                        );
+                                                      },
+                                                      child: const Text('Reenviar'),
+                                                    ),
+                                                  ],
                                                 ),
-                                              ),
-                                            );
+                                              );
+                                            } else {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    auth.errorMessage ?? "Error al iniciar sesión",
+                                                  ),
+                                                ),
+                                              );
+                                            }
                                             return;
                                           }
 

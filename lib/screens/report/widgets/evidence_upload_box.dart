@@ -27,8 +27,36 @@ class _EvidenceUploadBoxState extends State<EvidenceUploadBox> {
   static const int _maxBytes = 5 * 1024 * 1024; // 5 MB
 
   Future<void> _pickImage() async {
+    // Let the user choose camera or gallery
+    final ImageSource? src = await showModalBottomSheet<ImageSource?>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Tomar foto'),
+              onTap: () => Navigator.of(ctx).pop(ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Elegir desde la galería'),
+              onTap: () => Navigator.of(ctx).pop(ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.close),
+              title: const Text('Cancelar'),
+              onTap: () => Navigator.of(ctx).pop(null),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (src == null) return;
+
     final XFile? picked = await _picker.pickImage(
-      source: ImageSource.camera, // o .gallery si quieres
+      source: src,
       imageQuality: 80,
     );
     if (picked == null) return;
@@ -61,8 +89,35 @@ class _EvidenceUploadBoxState extends State<EvidenceUploadBox> {
   }
 
   Future<void> _pickVideo() async {
+    final ImageSource? src = await showModalBottomSheet<ImageSource?>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.videocam),
+              title: const Text('Grabar video'),
+              onTap: () => Navigator.of(ctx).pop(ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.video_library),
+              title: const Text('Elegir desde la galería'),
+              onTap: () => Navigator.of(ctx).pop(ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.close),
+              title: const Text('Cancelar'),
+              onTap: () => Navigator.of(ctx).pop(null),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (src == null) return;
+
     final XFile? picked = await _picker.pickVideo(
-      source: ImageSource.camera, // o .gallery
+      source: src,
       maxDuration: const Duration(seconds: 30),
     );
     if (picked == null) return;
