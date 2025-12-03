@@ -102,10 +102,6 @@ flutter build appbundle --release
 3. Envía un Pull Request con una descripción clara
 
 
-## 📜 License
-
-This project is provided as-is. Add a license file if you want to set an explicit license (MIT, Apache, etc.).
-
 ---
 
 SafeMap Team
